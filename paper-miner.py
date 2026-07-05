@@ -35,7 +35,7 @@ EFFECT_PATTERNS = [
     (r"cohen'?s?\s*d\s*[=:]\s*([\d.]+)", "cohens_d"),
     (r"r\s*[=:]\s*([\d.]+)", "correlation_r"),
     (r"beta\s*[=:]\s*([\d.]+)", "beta"),
-    (r"η²|eta.?squared?\s*[=:]\s*([\d.]+)", "eta_squared"),
+    (r"(?:η²|eta.?squared?)\s*[=:]\s*([\d.]+)", "eta_squared"),
     (r"effect size\s*[=:]\s*([\d.]+)", "effect_size"),
 ]
 
@@ -134,7 +134,10 @@ def search_biorxiv(keyword, max_results=MAX_PAPERS_PER_SOURCE):
     start_date = (datetime.now() - timedelta(days=DAYS_BACK)).strftime("%Y-%m-%d")
     papers = []
     cursor = 0
-    while len(papers) < max_results:
+    max_pages = 100  # bioRxiv has no keyword search; cap client-side pagination for rare terms
+    for _ in range(max_pages):
+        if len(papers) >= max_results:
+            break
         url = f"https://api.biorxiv.org/details/biorxiv/{start_date}/{end_date}/{cursor}"
         try:
             resp = requests.get(url, timeout=10)
@@ -164,6 +167,15 @@ def search_biorxiv(keyword, max_results=MAX_PAPERS_PER_SOURCE):
             break
     return papers[:max_results]
 
+def _reconstruct_abstract(inverted_index):
+    if not inverted_index:
+        return ""
+    positions = {}
+    for word, idxs in inverted_index.items():
+        for idx in idxs:
+            positions[idx] = word
+    return " ".join(positions[i] for i in sorted(positions))
+
 def search_openalex(keyword, max_results=MAX_PAPERS_PER_SOURCE):
     papers = []
     url = f"https://api.openalex.org/works?search={keyword}&per_page={max_results}&sort=publication_date:desc"
@@ -172,16 +184,18 @@ def search_openalex(keyword, max_results=MAX_PAPERS_PER_SOURCE):
         if resp.status_code == 200:
             data = resp.json()
             for item in data.get("results", []):
+                abstract = _reconstruct_abstract(item.get("abstract_inverted_index")) or "No abstract"
+                source = (item.get("primary_location") or {}).get("source") or {}
                 papers.append({
                     "source": "openalex",
                     "id": item.get("id"),
                     "title": item.get("title"),
-                    "abstract": item.get("abstract", "") or "No abstract",
+                    "abstract": abstract,
                     "date": item.get("publication_date"),
-                    "journal": item.get("host_venue", {}).get("display_name", "Unknown"),
-                    "url": item.get("doi_url") or item.get("url"),
+                    "journal": source.get("display_name", "Unknown"),
+                    "url": (item.get("ids") or {}).get("doi") or item.get("id"),
                 })
-    except:
+    except Exception:
         pass
     return papers
 
@@ -299,6 +313,9 @@ class PaperMinerGUI:
         if not keyword:
             messagebox.showwarning("Input Required", "Please enter a search term")
             return
+        if config["email"] == DEFAULT_EMAIL or "@" not in config["email"]:
+            messagebox.showwarning("Email Required", "Set a real email via 'Set Email' first (required by NCBI/PubMed).")
+            return
 
         self.search_btn.config(state="disabled")
         self.progress.start()
@@ -311,14 +328,14 @@ class PaperMinerGUI:
     def run_search(self, keyword):
         try:
             all_papers = []
-            self.update_output("→ PubMed...\n")
-            all_papers.extend(search_pubmed(keyword))
-            self.update_output("→ arXiv...\n")
-            all_papers.extend(search_arxiv(keyword))
-            self.update_output("→ bioRxiv...\n")
-            all_papers.extend(search_biorxiv(keyword))
-            self.update_output("→ OpenAlex...\n")
-            all_papers.extend(search_openalex(keyword))
+            for label, fn in [("PubMed", search_pubmed), ("arXiv", search_arxiv),
+                               ("bioRxiv", search_biorxiv), ("OpenAlex", search_openalex)]:
+                self.update_output(f"→ {label}...\n")
+                try:
+                    results = fn(keyword)
+                    all_papers.extend(results)
+                except Exception as e:
+                    self.update_output(f"   ⚠ {label} failed: {e}\n")
 
             self.update_output(f"\nTotal: {len(all_papers)} papers. Extracting...\n\n")
 
