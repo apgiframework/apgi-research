@@ -2,7 +2,7 @@
 APGI Implementation
 ============================
 
-Structured implementation of the APGI (Active Perception and Generative Inference)
+Structured implementation of the APGI (Allostatic Precision-Gated Ignition)
 dynamical system based on ultimate_apgi_template.py.
 
 This template provides:

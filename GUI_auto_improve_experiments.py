@@ -6354,7 +6354,7 @@ XPR AUTO operates within strict safety constraints:
 - **Safety**: Multi-layer guardrail system
 
 ## Research Focus
-APGI (Autonomous Program Generation and Improvement) is designed for:
+APGI (Allostatic Precision-Gated Ignition) is designed for:
 - Scientific experiment automation
 - Machine learning model optimization
 - Data analysis workflows

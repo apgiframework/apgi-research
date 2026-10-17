@@ -35,7 +35,7 @@ NUM_TRIALS = 50
 # ---------------------------------------------------------------------------
 # APGI Integration Parameters (DO NOT MODIFY)
 # ---------------------------------------------------------------------------
-# These parameters control the Active Predictive Global Ignition dynamics
+# These parameters control the Allostatic Precision-Gated Ignition dynamics
 # that track surprise accumulation, threshold dynamics, and somatic markers.
 
 APGI_ENABLED = True  # Enable APGI tracking for this experiment

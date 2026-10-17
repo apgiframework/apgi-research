@@ -221,6 +221,24 @@ The APGI Research Application implements a comprehensive autonomous learning alg
 - **Structured Logging**: JSON logging with operator/experiment context
 - **Security Metrics**: Real-time security telemetry and deny metrics
 
+## APGI Protocol Specification 1.1.0
+
+The experimental protocols in [`protocols/`](protocols/) follow APGI protocol specification
+1.1.0, byte-identical to [apgi-framework](https://github.com/apgiframework/apgi-framework)
+1.1.0. Validate them with `make protocols-check`; see [`protocols/CHANGELOG.md`](protocols/CHANGELOG.md)
+for what changed from 1.0. Under 1.1.0 a failure to confirm a prediction is not falsification
+(verdicts are CONFIRMED, FALSIFIED or INDETERMINATE), and κ (ATP/bit) is uncalibrated.
+
+`utils/apgi_protocol_spec.py` loads the registered protocols and provides
+`classify_prediction()` for the three-way verdict. `check_parameter_defaults()` compares the
+`APGI_System.APGIParameters` defaults with the registered θ₀, γ_sig and β_SM ranges. The
+default somatic gain `beta = 1.5` lies outside the registered β_SM range [0.3, 0.7], so it
+must not be used for a confirmatory fit.
+
+The 29 experiments below are paradigm simulations for autonomous parameter tuning. They are
+not the registered Protocol 0–7 studies, and their "APGI compliance" score is this platform's
+internal implementation check, not a protocol verdict.
+
 ## Supported Experiments
 
 The application supports 29 psychological experiments, all achieving **100/100 APGI compliance**:
@@ -622,6 +640,22 @@ python GUI-auto_improve_experiments.py --debug
 - **Tests** with >70% coverage
 - **Security** review for all changes
 
+## Citation
+
+If you use this platform in your research, please cite:
+
+```bibtex
+@software{pesochin_apgi_research_2026,
+  title={APGI Research: Allostatic Precision-Gated Ignition — Autonomous Research Platform},
+  author={Pesochin, Dimitry},
+  year={2026},
+  version={1.1.0},
+  doi={10.5281/zenodo.21632264},
+  url={https://github.com/apgiframework/apgi-research},
+  orcid={https://orcid.org/0009-0005-0328-2896}
+}
+```
+
 ## License
 
 This project is licensed under the MIT License. See LICENSE file for details.
@@ -631,7 +665,7 @@ This project is licensed under the MIT License. See LICENSE file for details.
 ### Core Frameworks
 
 - **ALGORITHM** - Autonomous learning algorithm with human-in-the-loop
-- **APGI** - Autonomous Psychological General Intelligence framework
+- **APGI** - Allostatic Precision-Gated Ignition framework
 - **CustomTkinter** - Modern GUI framework (5.0+)
 - **Pydantic** - Data validation and settings management
 - **litellm** - Multi-provider LLM API integration

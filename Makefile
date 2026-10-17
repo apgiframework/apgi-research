@@ -1,7 +1,7 @@
 # APGI Validation Framework Makefile
 # ==================================
 
-.PHONY: help clean test test-fast test-full lint install dev-install venv docs
+.PHONY: help clean test test-fast test-full lint install dev-install venv docs protocols-check
 
 help:
 	@echo "Available targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  install      - Install package and dependencies"
 	@echo "  dev-install  - Install in development mode"
 	@echo "  docs         - Generate documentation"
+	@echo "  protocols-check - Validate protocol specification 1.1.0 (protocols/)"
 
 venv:
 	python3 -m venv .venv
@@ -34,6 +35,9 @@ test-full:
 	python3 -m pytest tests/ --ignore=tests/comprehensive \
 		--cov=. --cov-report=html --cov-report=xml --cov-report=term-missing \
 		--cov-fail-under=100
+
+protocols-check:
+	python3 scripts/validate_protocols.py
 
 lint:
 	@echo "Running black formatting (skipping files with syntax errors)..."

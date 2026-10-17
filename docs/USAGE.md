@@ -329,7 +329,7 @@ This system transforms psychological task optimization from manual trial-and-err
 
 ## System Overview
 
-This directory contains experiment protocols for the APGI (Autonomous Psychological General Intelligence) auto-improvement system. Each experiment follows a two-file structure:
+This directory contains experiment protocols for the APGI (Allostatic Precision-Gated Ignition) auto-improvement system. Each experiment follows a two-file structure:
 
 - **`prepare_<experiment>.py`** - Fixed configurations and data preparation (READ-ONLY)
 - **`run_<experiment>.py`** - Agent-editable task parameters and simulation logic

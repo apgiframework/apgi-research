@@ -1,6 +1,6 @@
 # APGI Comprehensive Adversarial Testing Framework
 
-This testing framework provides **near 100% code coverage** across all modules, functions, classes, branches, and edge cases for the APGI (Autonomous Personal Growth Intelligence) research system.
+This testing framework provides **near 100% code coverage** across all modules, functions, classes, branches, and edge cases for the APGI (Allostatic Precision-Gated Ignition) research system.
 
 ## Quick Start
 

@@ -1,23 +1,38 @@
 """
 Semantic versioning for APGI.
-Uses importlib.metadata for single source of truth from pyproject.toml.
+pyproject.toml is the single source of truth: a source checkout reads it
+directly (an installed copy's metadata can be stale); otherwise the installed
+package metadata is used.
 """
 
-try:
-    from importlib.metadata import version
+import re
+from pathlib import Path
 
-    __version__ = version("autoresearch")
-except ImportError:
-    # Fallback for older Python versions
+_PYPROJECT = Path(__file__).resolve().parents[1] / "pyproject.toml"
+
+
+def _read_pyproject_version() -> str | None:
     try:
-        import pkg_resources
+        text = _PYPROJECT.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+    return match.group(1) if match else None
 
-        __version__ = pkg_resources.get_distribution("autoresearch").version
+
+def _read_installed_version() -> str:
+    try:
+        from importlib.metadata import version
+
+        return version("autoresearch")
     except Exception:
         # Ultimate fallback if package is not installed
-        __version__ = "0.1.0"
+        return "1.1.0"
+
+
+__version__ = _read_pyproject_version() or _read_installed_version()
 
 
 def get_version() -> str:
-    """Get version from importlib.metadata (single source of truth)."""
+    """Get the version from pyproject.toml (single source of truth)."""
     return __version__

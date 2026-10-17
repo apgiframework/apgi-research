@@ -64,6 +64,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
         pip install psutil pytest pytest-xdist
+    - name: Validate protocol specification 1.1.0
+      run: python scripts/validate_protocols.py
     - name: Run unit tests
       run: pytest tests/ -m "not slow and not integration" -v --tb=short
     - name: Run security tests

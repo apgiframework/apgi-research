@@ -1,7 +1,7 @@
 """
 APGI Integration Module for Auto-Improvement Experiments
 
-This module provides APGI (Active Predictive Global Ignition) framework integration
+This module provides APGI (Allostatic Precision-Gated Ignition) framework integration
 for all psychological experiments. It implements core dynamical system equations
 that can be applied across different experimental paradigms.
 

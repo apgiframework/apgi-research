@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "APGI Research: Allostatic Precision-Gated Ignition — autonomous research platform"
+abstract: >-
+  Autonomous, human-supervised research platform for the Allostatic
+  Precision-Gated Ignition (APGI) framework: AI-driven parameter tuning of 29
+  psychological-paradigm simulations. Ships the APGI protocol specification
+  1.1.0 (eight pre-registered experimental protocols, Protocol 0-7) used by
+  apgi-framework 1.1.0.
+type: software
+license: MIT
+version: "1.1.0"
+doi: 10.5281/zenodo.21632264
+date-released: "2026-10-17"
+repository-code: "https://github.com/apgiframework/apgi-research"
+url: "https://doi.org/10.5281/zenodo.21632264"
+authors:
+  - family-names: Pesochin
+    given-names: Dimitry
+    orcid: "https://orcid.org/0009-0005-0328-2896"
+keywords:
+  - neuroscience
+  - consciousness
+  - computational-model
+  - predictive-processing
+  - precision-weighting
+  - allostasis
+  - autonomous-research
+references:
+  - type: software
+    title: "APGI: Allostatic Precision-Gated Ignition"
+    version: "1.1.0"
+    repository-code: "https://github.com/apgiframework/apgi-framework"
+    authors:
+      - family-names: Pesochin
+        given-names: Dimitry
+        orcid: "https://orcid.org/0009-0005-0328-2896"
