@@ -133,10 +133,14 @@ class TestConfigManager:
 
             # Verify all values were loaded correctly
             for key, expected_value in test_config.items():
-                assert loaded_config[key] == expected_value, f"Failed to load {key}"  # nosec: B101 - Test assertion
+                assert (
+                    loaded_config[key] == expected_value
+                ), f"Failed to load {key}"  # nosec: B101 - Test assertion
 
             # Verify source tracking
-            assert config.get_source("experiment_name") == str(  # nosec: B101 - Test assertion
+            assert config.get_source(
+                "experiment_name"
+            ) == str(  # nosec: B101 - Test assertion
                 tmp_path / "test_config.json"
             )
 
@@ -166,7 +170,9 @@ class TestConfigManager:
             ), f"Environment variable {key} not loaded correctly"
 
         # Verify source tracking for environment variables
-        assert config.get_source(f"experiment_test_{key.lower()}") == f"env:{key}"  # nosec: B101 - Test assertion
+        assert (
+            config.get_source(f"experiment_test_{key.lower()}") == f"env:{key}"
+        )  # nosec: B101 - Test assertion
 
     def test_yaml_support(self):
         """Test YAML configuration file support."""
@@ -194,7 +200,9 @@ experiment:
                 loaded_experiment = config.get_experiment_config("yaml_test")
 
                 assert loaded_version == "1.0.0"  # nosec: B101 - Test assertion
-                assert loaded_experiment.experiment_name == "yaml_test"  # nosec: B101 - Test assertion
+                assert (
+                    loaded_experiment.experiment_name == "yaml_test"
+                )  # nosec: B101 - Test assertion
                 assert loaded_experiment.tau_S == 0.35  # nosec: B101 - Test assertion
 
     def test_caching_functionality(self):
@@ -213,11 +221,15 @@ experiment:
 
             # First call should use cache
             result1 = config.get_experiment_config("cached_test")
-            assert result1.experiment_name == "cached_test"  # nosec: B101 - Test assertion
+            assert (
+                result1.experiment_name == "cached_test"
+            )  # nosec: B101 - Test assertion
 
             # Second call should use cache
             result2 = config.get_experiment_config("cached_test")
-            assert result2.experiment_name == "cached_test"  # nosec: B101 - Test assertion
+            assert (
+                result2.experiment_name == "cached_test"
+            )  # nosec: B101 - Test assertion
 
             # Verify cache was used
             mock_get.assert_called_once()
@@ -236,7 +248,9 @@ experiment:
         assert new_config["security_enabled"] is True  # nosec: B101 - Test assertion
         assert new_config["log_level"] == "INFO"  # nosec: B101 - Test assertion
         assert new_config["version"] == "1.0.0"  # nosec: B101 - Test assertion
-        assert new_config["experiment_name"] == "old_experiment"  # nosec: B101 - Test assertion
+        assert (
+            new_config["experiment_name"] == "old_experiment"
+        )  # nosec: B101 - Test assertion
         assert (
             new_config["tau_S"] == 0.3
         )  # Preserved old value  # nosec: B101 - Test assertion
@@ -248,8 +262,12 @@ experiment:
         expected_keys = ["tau_S", "beta", "theta_0", "alpha", "gamma_M", "lambda_S"]
 
         for key in expected_keys:
-            assert key in legacy_params, f"Missing legacy key: {key}"  # nosec: B101 - Test assertion
-            assert isinstance(legacy_params[key], (int, float))  # nosec: B101 - Test assertion
+            assert (
+                key in legacy_params
+            ), f"Missing legacy key: {key}"  # nosec: B101 - Test assertion
+            assert isinstance(
+                legacy_params[key], (int, float)
+            )  # nosec: B101 - Test assertion
 
     def test_error_handling(self):
         """Test error handling in configuration loading."""
@@ -278,10 +296,14 @@ experiment:
         checksum = compute_config_checksum(test_config, "secret123")
 
         # Valid checksum
-        assert validate_config_integrity(test_config, checksum, "secret123")  # nosec: B101 - Test assertion
+        assert validate_config_integrity(
+            test_config, checksum, "secret123"
+        )  # nosec: B101 - Test assertion
 
         # Invalid checksum
-        assert not validate_config_integrity(test_config, checksum, "wrong_secret")  # nosec: B101 - Test assertion
+        assert not validate_config_integrity(
+            test_config, checksum, "wrong_secret"
+        )  # nosec: B101 - Test assertion
 
         # Test startup validation
         valid_config = APGIGlobalConfig(
@@ -292,7 +314,9 @@ experiment:
         )
 
         assert validate_startup_config(valid_config)  # nosec: B101 - Test assertion
-        assert not validate_startup_config({"invalid": "config"})  # nosec: B101 - Test assertion
+        assert not validate_startup_config(
+            {"invalid": "config"}
+        )  # nosec: B101 - Test assertion
 
 
 class TestPydanticSchemas:
@@ -324,7 +348,9 @@ class TestPydanticSchemas:
             precision_gap_enabled=valid_config["precision_gap_enabled"],
             neuromodulator_tracking=valid_config["neuromodulator_tracking"],
         )
-        assert config.experiment_name == "test_experiment"  # nosec: B101 - Test assertion
+        assert (
+            config.experiment_name == "test_experiment"
+        )  # nosec: B101 - Test assertion
         assert config.tau_S == 0.35  # nosec: B101 - Test assertion
 
         # Test invalid configuration
@@ -457,7 +483,9 @@ class TestConfigurationUtilities:
 
         # Sources should be reset to defaults
         new_sources = config.get_all_sources()
-        assert len(new_sources) < len(initial_sources) or len(new_sources) == 0  # nosec: B101 - Test assertion
+        assert (
+            len(new_sources) < len(initial_sources) or len(new_sources) == 0
+        )  # nosec: B101 - Test assertion
 
 
 if __name__ == "__main__":

@@ -21,7 +21,9 @@ from typing import Any, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
-from playwright.sync_api import Page
+
+pytest.importorskip("playwright.sync_api", reason="requires playwright")
+from playwright.sync_api import Page  # noqa: E402
 from pytest import MonkeyPatch
 
 # Add project root to path

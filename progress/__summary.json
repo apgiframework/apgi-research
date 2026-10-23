@@ -1,0 +1,23 @@
+{
+  "experiment_info": {
+    "name": "",
+    "participant_id": "",
+    "status": "running",
+    "start_time": "2026-10-23T14:27:13.351914",
+    "end_time": null,
+    "elapsed_time": 4.1484832763671875e-05
+  },
+  "progress": {
+    "total_trials": 0,
+    "completed_trials": 0,
+    "current_trial": 0,
+    "progress_percentage": 0.0,
+    "estimated_remaining_time": null
+  },
+  "trial_statistics": {},
+  "apgi_statistics": {},
+  "errors": {
+    "total_errors": 0,
+    "error_log": []
+  }
+}

@@ -456,8 +456,6 @@ class TestMetricsValidation:
         )  # nosec: B101 - Test assertion
 
 
-from apgi_metrics import IgnitionMetrics
-
 doc_lines = (IgnitionMetrics.__doc__ or "").split("\n")
 print("Docstring lines:")
 for i, line in enumerate(doc_lines):

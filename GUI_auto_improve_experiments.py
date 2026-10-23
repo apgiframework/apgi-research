@@ -67,7 +67,6 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Optional
 
 # Matplotlib imports for embedded visualization
 import matplotlib
@@ -1154,9 +1153,12 @@ class ExperimentRunnerGUI(ctk.CTk):
         Safe to call from any thread.
         """
         if threading.current_thread() is not threading.main_thread():
-            self.after(0, lambda e=experiment, m=modifications: self._log_xpr_change(e, m))
+            self.after(
+                0, lambda e=experiment, m=modifications: self._log_xpr_change(e, m)
+            )
             return
         import datetime as _dt
+
         ts = _dt.datetime.now().strftime("%H:%M:%S")
         lines = [f"[{ts}] {experiment}"]
         for param, val in modifications.items():
@@ -1456,7 +1458,10 @@ class ExperimentRunnerGUI(ctk.CTk):
 
                 def run_agent() -> None:
                     try:
-                        agent = AutonomousAgent(str(self.research_dir), param_change_callback=self._log_xpr_change)
+                        agent = AutonomousAgent(
+                            str(self.research_dir),
+                            param_change_callback=self._log_xpr_change,
+                        )
                         experiment_key = (
                             script.replace("experiments/", "")
                             .replace("run_", "")
@@ -3999,17 +4004,32 @@ class ExperimentRunnerGUI(ctk.CTk):
                 ax1.tick_params(axis="x", rotation=45)
             else:
                 behav_candidates2 = [
-                    ("primary_metric", "Primary"), ("accuracy", "Accuracy"),
-                    ("d_prime", "D-Prime"), ("hit_rate", "Hit Rate"),
-                    ("detection_rate", "Detection"), ("alternation_rate", "Alternation"),
-                    ("mean_rt_ms", "Mean RT"), ("go_accuracy", "Go Acc."),
-                    ("overall_accuracy", "Overall"), ("benchmark_accuracy", "Benchmark"),
+                    ("primary_metric", "Primary"),
+                    ("accuracy", "Accuracy"),
+                    ("d_prime", "D-Prime"),
+                    ("hit_rate", "Hit Rate"),
+                    ("detection_rate", "Detection"),
+                    ("alternation_rate", "Alternation"),
+                    ("mean_rt_ms", "Mean RT"),
+                    ("go_accuracy", "Go Acc."),
+                    ("overall_accuracy", "Overall"),
+                    ("benchmark_accuracy", "Benchmark"),
                 ]
-                behav_pairs2 = [(lbl, get_val2(k)) for k, lbl in behav_candidates2
-                                if get_val2(k) is not None][:4]
+                behav_pairs2 = [
+                    (lbl, get_val2(k))
+                    for k, lbl in behav_candidates2
+                    if get_val2(k) is not None
+                ][:4]
                 if behav_pairs2:
                     lbls2, vals2 = zip(*behav_pairs2)
-                    ax1.bar(lbls2, list(vals2), color=["#3498db", "#e74c3c", "#f39c12", "#9b59b6"][:len(vals2)], alpha=0.8)
+                    ax1.bar(
+                        lbls2,
+                        list(vals2),
+                        color=["#3498db", "#e74c3c", "#f39c12", "#9b59b6"][
+                            : len(vals2)
+                        ],
+                        alpha=0.8,
+                    )
                     ax1.set_title("1. Core Dynamics (Behavioral)")
                     ax1.tick_params(axis="x", rotation=45)
                 else:
@@ -4017,19 +4037,30 @@ class ExperimentRunnerGUI(ctk.CTk):
 
             # Panel 2: Measurement Proxies - use actual experiment metrics
             proxy_candidates2 = [
-                ("primary_metric", "Primary"), ("d_prime", "D-Prime"),
-                ("mean_somatic_marker", "Somatic"), ("learning_rate", "Learning"),
-                ("accuracy", "Accuracy"), ("hit_rate", "Hit Rate"),
-                ("overall_accuracy", "Overall"), ("recognition_accuracy", "Recognition"),
-                ("grammatical_accuracy", "Grammar"), ("detection_accuracy", "Detection"),
+                ("primary_metric", "Primary"),
+                ("d_prime", "D-Prime"),
+                ("mean_somatic_marker", "Somatic"),
+                ("learning_rate", "Learning"),
+                ("accuracy", "Accuracy"),
+                ("hit_rate", "Hit Rate"),
+                ("overall_accuracy", "Overall"),
+                ("recognition_accuracy", "Recognition"),
+                ("grammatical_accuracy", "Grammar"),
+                ("detection_accuracy", "Detection"),
             ]
-            proxy_pairs2 = [(lbl, get_val2(k)) for k, lbl in proxy_candidates2
-                            if get_val2(k) is not None][:4]
+            proxy_pairs2 = [
+                (lbl, get_val2(k))
+                for k, lbl in proxy_candidates2
+                if get_val2(k) is not None
+            ][:4]
             if proxy_pairs2:
                 lbls_p, vals_p = zip(*proxy_pairs2)
-                ax2.bar(lbls_p, list(vals_p),
-                        color=["#2ecc71", "#1abc9c", "#34495e", "#7f8c8d"][:len(vals_p)],
-                        alpha=0.8)
+                ax2.bar(
+                    lbls_p,
+                    list(vals_p),
+                    color=["#2ecc71", "#1abc9c", "#34495e", "#7f8c8d"][: len(vals_p)],
+                    alpha=0.8,
+                )
                 ax2.set_title("2. Measurement Proxies")
                 ax2.tick_params(axis="x", rotation=45)
             else:
@@ -4053,19 +4084,32 @@ class ExperimentRunnerGUI(ctk.CTk):
                 ax3.set_title("3. Neuromodulators")
             else:
                 rt_candidates2 = [
-                    ("mean_rt_ms", "Mean RT"), ("mean_response_time_ms", "Mean RT (ms)"),
-                    ("congruent_rt_ms", "Congruent"), ("incongruent_rt_ms", "Incongruent"),
-                    ("valid_rt_ms", "Valid RT"), ("invalid_rt_ms", "Invalid RT"),
-                    ("go_rt_ms", "Go RT"), ("mean_go_rt_ms", "Go RT"),
-                    ("completion_time_s", "Completion (s)"), ("mean_saccade_latency", "Saccade"),
+                    ("mean_rt_ms", "Mean RT"),
+                    ("mean_response_time_ms", "Mean RT (ms)"),
+                    ("congruent_rt_ms", "Congruent"),
+                    ("incongruent_rt_ms", "Incongruent"),
+                    ("valid_rt_ms", "Valid RT"),
+                    ("invalid_rt_ms", "Invalid RT"),
+                    ("go_rt_ms", "Go RT"),
+                    ("mean_go_rt_ms", "Go RT"),
+                    ("completion_time_s", "Completion (s)"),
+                    ("mean_saccade_latency", "Saccade"),
                 ]
-                rt_pairs2 = [(lbl, get_val2(k)) for k, lbl in rt_candidates2
-                             if get_val2(k) is not None][:4]
+                rt_pairs2 = [
+                    (lbl, get_val2(k))
+                    for k, lbl in rt_candidates2
+                    if get_val2(k) is not None
+                ][:4]
                 if rt_pairs2:
                     lbls_rt, vals_rt = zip(*rt_pairs2)
-                    ax3.bar(lbls_rt, list(vals_rt),
-                            color=["#e67e22", "#d35400", "#c0392b", "#8e44ad"][:len(vals_rt)],
-                            alpha=0.8)
+                    ax3.bar(
+                        lbls_rt,
+                        list(vals_rt),
+                        color=["#e67e22", "#d35400", "#c0392b", "#8e44ad"][
+                            : len(vals_rt)
+                        ],
+                        alpha=0.8,
+                    )
                     ax3.set_title("3. Response Times (ms)")
                     ax3.tick_params(axis="x", rotation=45)
                 else:
@@ -4073,21 +4117,34 @@ class ExperimentRunnerGUI(ctk.CTk):
 
             # Panel 4: Domain-specific - use actual experiment metrics
             domain_candidates2 = [
-                ("learning_rate", "Learning"), ("mean_threshold", "Threshold"),
-                ("metabolic_cost", "Metabolism"), ("precision_mismatch", "Prec. Gap"),
-                ("false_alarm_rate", "False Alarm"), ("miss_rate", "Miss Rate"),
-                ("interference_effect_ms", "Interference"), ("flanker_effect_ms", "Flanker"),
-                ("simon_effect_ms", "Simon Eff."), ("stroop_effect_ms", "Stroop Eff."),
-                ("num_trials", "Num Trials"), ("mean_somatic_marker", "Somatic"),
-                ("masking_effect_ms", "Masking"), ("net_score", "Net Score"),
+                ("learning_rate", "Learning"),
+                ("mean_threshold", "Threshold"),
+                ("metabolic_cost", "Metabolism"),
+                ("precision_mismatch", "Prec. Gap"),
+                ("false_alarm_rate", "False Alarm"),
+                ("miss_rate", "Miss Rate"),
+                ("interference_effect_ms", "Interference"),
+                ("flanker_effect_ms", "Flanker"),
+                ("simon_effect_ms", "Simon Eff."),
+                ("stroop_effect_ms", "Stroop Eff."),
+                ("num_trials", "Num Trials"),
+                ("mean_somatic_marker", "Somatic"),
+                ("masking_effect_ms", "Masking"),
+                ("net_score", "Net Score"),
             ]
-            domain_pairs2 = [(lbl, get_val2(k)) for k, lbl in domain_candidates2
-                             if get_val2(k) is not None][:4]
+            domain_pairs2 = [
+                (lbl, get_val2(k))
+                for k, lbl in domain_candidates2
+                if get_val2(k) is not None
+            ][:4]
             if domain_pairs2:
                 lbls_d, vals_d = zip(*domain_pairs2)
-                ax4.bar(lbls_d, list(vals_d),
-                        color=["#27ae60", "#2980b9", "#8e44ad", "#f39c12"][:len(vals_d)],
-                        alpha=0.8)
+                ax4.bar(
+                    lbls_d,
+                    list(vals_d),
+                    color=["#27ae60", "#2980b9", "#8e44ad", "#f39c12"][: len(vals_d)],
+                    alpha=0.8,
+                )
                 ax4.set_title("4. Domain-Specific")
                 ax4.tick_params(axis="x", rotation=45)
             else:
@@ -4095,23 +4152,37 @@ class ExperimentRunnerGUI(ctk.CTk):
 
             # Panel 5: Psychiatric - use actual parsed metrics
             psych_candidates2 = [
-                ("anxiety_level", "Anxiety"), ("max_anxiety_index", "Max Anxiety"),
-                ("precision_mismatch", "Prec. Gap"), ("surprise_accumulation_index", "Surp. Accum."),
-                ("mean_surprise", "Surprise"), ("mean_threshold", "Threshold"),
-                ("accuracy", "Accuracy"), ("hit_rate", "Hit Rate"),
-                ("false_alarm_rate", "False Alarm"), ("go_accuracy", "Go Acc."),
-                ("no_go_accuracy", "No-Go Acc."), ("grammatical_accuracy", "Grammar"),
-                ("detection_accuracy", "Detection"), ("recognition_accuracy", "Recognition"),
-                ("overall_accuracy", "Overall"), ("alternation_rate", "Alt. Rate"),
+                ("anxiety_level", "Anxiety"),
+                ("max_anxiety_index", "Max Anxiety"),
+                ("precision_mismatch", "Prec. Gap"),
+                ("surprise_accumulation_index", "Surp. Accum."),
+                ("mean_surprise", "Surprise"),
+                ("mean_threshold", "Threshold"),
+                ("accuracy", "Accuracy"),
+                ("hit_rate", "Hit Rate"),
+                ("false_alarm_rate", "False Alarm"),
+                ("go_accuracy", "Go Acc."),
+                ("no_go_accuracy", "No-Go Acc."),
+                ("grammatical_accuracy", "Grammar"),
+                ("detection_accuracy", "Detection"),
+                ("recognition_accuracy", "Recognition"),
+                ("overall_accuracy", "Overall"),
+                ("alternation_rate", "Alt. Rate"),
                 ("primary_metric", "Primary"),
             ]
-            psych_pairs2 = [(lbl, get_val2(k)) for k, lbl in psych_candidates2
-                            if get_val2(k) is not None][:4]
+            psych_pairs2 = [
+                (lbl, get_val2(k))
+                for k, lbl in psych_candidates2
+                if get_val2(k) is not None
+            ][:4]
             if psych_pairs2:
                 lbls_ps, vals_ps = zip(*psych_pairs2)
-                ax5.bar(lbls_ps, list(vals_ps),
-                        color=["#bdc3c7", "#95a5a6", "#7f8c8d", "#e74c3c"][:len(vals_ps)],
-                        alpha=0.8)
+                ax5.bar(
+                    lbls_ps,
+                    list(vals_ps),
+                    color=["#bdc3c7", "#95a5a6", "#7f8c8d", "#e74c3c"][: len(vals_ps)],
+                    alpha=0.8,
+                )
                 ax5.set_title("5. Psychiatric Indicators")
                 ax5.tick_params(axis="x", rotation=45)
             else:
@@ -4122,15 +4193,22 @@ class ExperimentRunnerGUI(ctk.CTk):
             state_y2 = results.get("state_y")
 
             if state_x2 is not None and state_y2 is not None:
-                if isinstance(state_x2, (list, tuple)) and isinstance(state_y2, (list, tuple)):
+                if isinstance(state_x2, (list, tuple)) and isinstance(
+                    state_y2, (list, tuple)
+                ):
                     ax6.plot(state_x2, state_y2, color="#1abc9c", lw=1.2, alpha=0.7)
                     ax6.scatter(state_x2, state_y2, c="#1abc9c", s=20, alpha=0.6)
                 else:
                     sx6, sy6 = float(state_x2), float(state_y2)
                     ax6.scatter([sx6], [sy6], c="#1abc9c", s=120, zorder=5)
-                    ax6.annotate(f"({sx6:.3f}, {sy6:.3f})", (sx6, sy6),
-                                 textcoords="offset points", xytext=(6, 6),
-                                 color="white", fontsize=8)
+                    ax6.annotate(
+                        f"({sx6:.3f}, {sy6:.3f})",
+                        (sx6, sy6),
+                        textcoords="offset points",
+                        xytext=(6, 6),
+                        color="white",
+                        fontsize=8,
+                    )
                 ax6.set_title("6. State Space Trajectory")
                 ax6.set_xlabel("State X", color="white", fontsize=8)
                 ax6.set_ylabel("State Y", color="white", fontsize=8)
@@ -4140,9 +4218,14 @@ class ExperimentRunnerGUI(ctk.CTk):
                 if mean_surprise is not None and mean_threshold is not None:
                     sx6, sy6 = float(mean_surprise), float(mean_threshold)
                     ax6.scatter([sx6], [sy6], c="#1abc9c", s=120, zorder=5)
-                    ax6.annotate(f"({sx6:.3f}, {sy6:.3f})", (sx6, sy6),
-                                 textcoords="offset points", xytext=(6, 6),
-                                 color="white", fontsize=8)
+                    ax6.annotate(
+                        f"({sx6:.3f}, {sy6:.3f})",
+                        (sx6, sy6),
+                        textcoords="offset points",
+                        xytext=(6, 6),
+                        color="white",
+                        fontsize=8,
+                    )
                     ax6.set_title("6. State (Surprise vs Threshold)")
                     ax6.set_xlabel("Surprise", color="white", fontsize=8)
                     ax6.set_ylabel("Threshold", color="white", fontsize=8)
@@ -4162,43 +4245,95 @@ class ExperimentRunnerGUI(ctk.CTk):
                     actual_prec2 = 1.0
 
             if expected_prec2 is not None and actual_prec2 is not None:
-                exp_f = float(expected_prec2) if isinstance(expected_prec2, (int, float)) else expected_prec2[0]
-                act_f = float(actual_prec2) if isinstance(actual_prec2, (int, float)) else actual_prec2[0]
+                exp_f = (
+                    float(expected_prec2)
+                    if isinstance(expected_prec2, (int, float))
+                    else expected_prec2[0]
+                )
+                act_f = (
+                    float(actual_prec2)
+                    if isinstance(actual_prec2, (int, float))
+                    else actual_prec2[0]
+                )
                 gap2 = exp_f - act_f
 
-                if isinstance(expected_prec2, (int, float)) and isinstance(actual_prec2, (int, float)):
+                if isinstance(expected_prec2, (int, float)) and isinstance(
+                    actual_prec2, (int, float)
+                ):
                     if abs(gap2) < 1e-6:
                         # Trivially flat: show bar chart instead of overlapping lines
-                        ax7.bar(["Expected", "Actual"], [exp_f, act_f],
-                                color=["#3498db", "#e74c3c"], alpha=0.8)
+                        ax7.bar(
+                            ["Expected", "Actual"],
+                            [exp_f, act_f],
+                            color=["#3498db", "#e74c3c"],
+                            alpha=0.8,
+                        )
                         ax7.set_title("7. Precision Values")
                     else:
                         num_points = 30
                         time_steps2 = list(range(num_points))
-                        expected_prec2 = [exp_f - (gap2 * i / num_points) for i in range(num_points)]
+                        expected_prec2 = [
+                            exp_f - (gap2 * i / num_points) for i in range(num_points)
+                        ]
                         actual_prec2 = [act_f] * num_points
-                        ax7.plot(time_steps2, expected_prec2, label="Expected", color="#3498db", lw=2)
-                        ax7.plot(time_steps2, actual_prec2, label="Actual", color="#e74c3c", lw=2)
-                        ax7.fill_between(time_steps2, expected_prec2, actual_prec2,
-                                         color="#9b59b6", alpha=0.3, label="Gap")
+                        ax7.plot(
+                            time_steps2,
+                            expected_prec2,
+                            label="Expected",
+                            color="#3498db",
+                            lw=2,
+                        )
+                        ax7.plot(
+                            time_steps2,
+                            actual_prec2,
+                            label="Actual",
+                            color="#e74c3c",
+                            lw=2,
+                        )
+                        ax7.fill_between(
+                            time_steps2,
+                            expected_prec2,
+                            actual_prec2,
+                            color="#9b59b6",
+                            alpha=0.3,
+                            label="Gap",
+                        )
                         all_vals7 = expected_prec2 + actual_prec2
-                        _pmin7 = min(all_vals7); _pmax7 = max(all_vals7)
+                        _pmin7 = min(all_vals7)
+                        _pmax7 = max(all_vals7)
                         _pad7 = (_pmax7 - _pmin7) * 0.1 or 0.05
                         ax7.set_ylim(max(0, _pmin7 - _pad7), _pmax7 + _pad7)
                         ax7.set_title("7. Precision Gap over Time")
-                        ax7.legend(loc="upper right", facecolor="#2b2b2b", labelcolor="white")
+                        ax7.legend(
+                            loc="upper right", facecolor="#2b2b2b", labelcolor="white"
+                        )
                 else:
-                    ts7 = time_steps2 if time_steps2 is not None else list(range(len(expected_prec2)))
-                    ax7.plot(ts7, expected_prec2, label="Expected", color="#3498db", lw=2)
+                    ts7 = (
+                        time_steps2
+                        if time_steps2 is not None
+                        else list(range(len(expected_prec2)))
+                    )
+                    ax7.plot(
+                        ts7, expected_prec2, label="Expected", color="#3498db", lw=2
+                    )
                     ax7.plot(ts7, actual_prec2, label="Actual", color="#e74c3c", lw=2)
-                    ax7.fill_between(ts7, expected_prec2, actual_prec2,
-                                     color="#9b59b6", alpha=0.3, label="Gap")
+                    ax7.fill_between(
+                        ts7,
+                        expected_prec2,
+                        actual_prec2,
+                        color="#9b59b6",
+                        alpha=0.3,
+                        label="Gap",
+                    )
                     all_vals7 = list(expected_prec2) + list(actual_prec2)
-                    _pmin7 = min(all_vals7); _pmax7 = max(all_vals7)
+                    _pmin7 = min(all_vals7)
+                    _pmax7 = max(all_vals7)
                     _pad7 = (_pmax7 - _pmin7) * 0.1 or 0.05
                     ax7.set_ylim(max(0, _pmin7 - _pad7), _pmax7 + _pad7)
                     ax7.set_title("7. Precision Gap over Time")
-                    ax7.legend(loc="upper right", facecolor="#2b2b2b", labelcolor="white")
+                    ax7.legend(
+                        loc="upper right", facecolor="#2b2b2b", labelcolor="white"
+                    )
             else:
                 _no_data2(ax7, "7. Precision Gap over Time")
 
@@ -4411,24 +4546,33 @@ class ExperimentRunnerGUI(ctk.CTk):
 
         hdr = ctk.CTkFrame(dialog, fg_color="transparent")
         hdr.pack(padx=16, pady=(12, 4), fill="x")
-        ctk.CTkLabel(hdr, text="Audit Trail", font=ctk.CTkFont(size=15, weight="bold")).pack(side="left")
+        ctk.CTkLabel(
+            hdr, text="Audit Trail", font=ctk.CTkFont(size=15, weight="bold")
+        ).pack(side="left")
 
         filter_frame = ctk.CTkFrame(dialog, fg_color="transparent")
         filter_frame.pack(padx=16, pady=(0, 6), fill="x")
         filter_frame.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(filter_frame, text="Filter:", font=ctk.CTkFont(size=11)).grid(row=0, column=0, padx=(0, 6))
-        filter_var = ctk.StringVar()
-        ctk.CTkEntry(filter_frame, textvariable=filter_var, placeholder_text="event type, action, operator…").grid(
-            row=0, column=1, sticky="ew", padx=(0, 6)
+        ctk.CTkLabel(filter_frame, text="Filter:", font=ctk.CTkFont(size=11)).grid(
+            row=0, column=0, padx=(0, 6)
         )
+        filter_var = ctk.StringVar()
+        ctk.CTkEntry(
+            filter_frame,
+            textvariable=filter_var,
+            placeholder_text="event type, action, operator…",
+        ).grid(row=0, column=1, sticky="ew", padx=(0, 6))
 
         log_text = ctk.CTkTextbox(dialog, font=("Courier", 10), state="disabled")
         log_text.pack(padx=16, pady=(0, 4), fill="both", expand=True)
 
         status_var = ctk.StringVar(value="")
-        ctk.CTkLabel(dialog, textvariable=status_var, font=ctk.CTkFont(size=10), text_color="#888888").pack(
-            padx=16, pady=(0, 4), anchor="w"
-        )
+        ctk.CTkLabel(
+            dialog,
+            textvariable=status_var,
+            font=ctk.CTkFont(size=10),
+            text_color="#888888",
+        ).pack(padx=16, pady=(0, 4), anchor="w")
 
         _all_entries: list = []
 
@@ -4458,7 +4602,9 @@ class ExperimentRunnerGUI(ctk.CTk):
                 evt = entry.get("event_type", "")
                 op = entry.get("operator_name", entry.get("operator_id", ""))
                 action = entry.get("action", "")
-                resource = f"{entry.get('resource_type','')}/{entry.get('resource_id','')}"
+                resource = (
+                    f"{entry.get('resource_type','')}/{entry.get('resource_id','')}"
+                )
                 status = entry.get("status", "")
                 row = f"[{ts[:19]}] {evt:<22} {action:<20} {op:<16} {resource:<28} {status}"
                 if q and q not in row.lower():
@@ -4466,21 +4612,35 @@ class ExperimentRunnerGUI(ctk.CTk):
                 lines.append(row)
             log_text.configure(state="normal")
             log_text.delete("1.0", "end")
-            log_text.insert("1.0", "\n".join(lines) if lines else "(no matching entries)")
+            log_text.insert(
+                "1.0", "\n".join(lines) if lines else "(no matching entries)"
+            )
             log_text.configure(state="disabled")
-            status_var.set(f"Showing {len(lines)}/{len(_all_entries)} events — {audit_file}")
+            status_var.set(
+                f"Showing {len(lines)}/{len(_all_entries)} events — {audit_file}"
+            )
 
         filter_var.trace_add("write", lambda *_: _render(filter_var.get()))
 
         btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
         btn_frame.pack(padx=16, pady=(0, 12), fill="x")
         ctk.CTkButton(
-            btn_frame, text="↺ Refresh", width=90, height=28, font=ctk.CTkFont(size=10),
+            btn_frame,
+            text="↺ Refresh",
+            width=90,
+            height=28,
+            font=ctk.CTkFont(size=10),
             command=lambda: (_load_entries(), _render(filter_var.get())),
         ).pack(side="left", padx=(0, 6))
         ctk.CTkButton(
-            btn_frame, text="✕ Close", width=80, height=28, font=ctk.CTkFont(size=10),
-            fg_color="#e74c3c", hover_color="#c0392b", command=dialog.destroy,
+            btn_frame,
+            text="✕ Close",
+            width=80,
+            height=28,
+            font=ctk.CTkFont(size=10),
+            fg_color="#e74c3c",
+            hover_color="#c0392b",
+            command=dialog.destroy,
         ).pack(side="left")
 
         _load_entries()
@@ -4498,19 +4658,27 @@ class ExperimentRunnerGUI(ctk.CTk):
         dialog.attributes("-topmost", True)
 
         ctk.CTkLabel(
-            dialog, text="Add New Experiment", font=ctk.CTkFont(size=16, weight="bold"),
+            dialog,
+            text="Add New Experiment",
+            font=ctk.CTkFont(size=16, weight="bold"),
         ).pack(pady=(15, 5))
 
         mode_frame = ctk.CTkFrame(dialog, fg_color="transparent")
         mode_frame.pack(padx=20, fill="x", pady=(0, 5))
         _source_var = ctk.StringVar(value="template")
         ctk.CTkRadioButton(
-            mode_frame, text="Scaffold from template", variable=_source_var,
-            value="template", font=ctk.CTkFont(size=11),
+            mode_frame,
+            text="Scaffold from template",
+            variable=_source_var,
+            value="template",
+            font=ctk.CTkFont(size=11),
         ).pack(side="left", padx=(0, 20))
         ctk.CTkRadioButton(
-            mode_frame, text="Import existing .py file", variable=_source_var,
-            value="import", font=ctk.CTkFont(size=11),
+            mode_frame,
+            text="Import existing .py file",
+            variable=_source_var,
+            value="import",
+            font=ctk.CTkFont(size=11),
         ).pack(side="left")
 
         form_frame = ctk.CTkFrame(dialog, fg_color="transparent")
@@ -4523,26 +4691,40 @@ class ExperimentRunnerGUI(ctk.CTk):
         name_entry = ctk.CTkEntry(form_frame, width=310)
         name_entry.grid(row=0, column=1, columnspan=2, padx=5, pady=4, sticky="ew")
 
-        desc_label = ctk.CTkLabel(form_frame, text="Description:", font=ctk.CTkFont(size=12))
+        desc_label = ctk.CTkLabel(
+            form_frame, text="Description:", font=ctk.CTkFont(size=12)
+        )
         desc_label.grid(row=1, column=0, sticky="nw", padx=5, pady=4)
         desc_entry = ctk.CTkTextbox(form_frame, height=60)
         desc_entry.grid(row=1, column=1, columnspan=2, padx=5, pady=4, sticky="nsew")
 
-        tmpl_label = ctk.CTkLabel(form_frame, text="Template:", font=ctk.CTkFont(size=12))
+        tmpl_label = ctk.CTkLabel(
+            form_frame, text="Template:", font=ctk.CTkFont(size=12)
+        )
         tmpl_label.grid(row=2, column=0, sticky="w", padx=5, pady=4)
         template_menu = ctk.CTkOptionMenu(
             form_frame,
-            values=["APGI Cognitive", "Basic Experiment", "Data Analysis", "Model Training"],
+            values=[
+                "APGI Cognitive",
+                "Basic Experiment",
+                "Data Analysis",
+                "Model Training",
+            ],
             width=200,
         )
         template_menu.grid(row=2, column=1, padx=5, pady=4, sticky="w")
 
-        import_label = ctk.CTkLabel(form_frame, text="Script file:", font=ctk.CTkFont(size=12))
+        import_label = ctk.CTkLabel(
+            form_frame, text="Script file:", font=ctk.CTkFont(size=12)
+        )
         import_label.grid(row=3, column=0, sticky="w", padx=5, pady=4)
         import_path_var = ctk.StringVar(value="(no file selected)")
         import_path_label = ctk.CTkLabel(
-            form_frame, textvariable=import_path_var, font=ctk.CTkFont(size=10),
-            text_color="#888888", anchor="w",
+            form_frame,
+            textvariable=import_path_var,
+            font=ctk.CTkFont(size=10),
+            text_color="#888888",
+            anchor="w",
         )
         import_path_label.grid(row=3, column=1, padx=5, pady=4, sticky="ew")
 
@@ -4560,8 +4742,12 @@ class ExperimentRunnerGUI(ctk.CTk):
                     name_entry.insert(0, stem)
 
         browse_btn = ctk.CTkButton(
-            form_frame, text="Browse…", width=70, height=26,
-            font=ctk.CTkFont(size=10), command=browse_file,
+            form_frame,
+            text="Browse…",
+            width=70,
+            height=26,
+            font=ctk.CTkFont(size=10),
+            command=browse_file,
         )
         browse_btn.grid(row=3, column=2, padx=5, pady=4)
 
@@ -4572,7 +4758,9 @@ class ExperimentRunnerGUI(ctk.CTk):
             desc_entry.configure(state=_state_tmpl)
             tmpl_label.configure(state=_state_tmpl)
             template_menu.configure(state=_state_tmpl)
-            import_path_label.configure(text_color="#cccccc" if is_import else "#555555")
+            import_path_label.configure(
+                text_color="#cccccc" if is_import else "#555555"
+            )
             browse_btn.configure(state="normal" if is_import else "disabled")
 
         _source_var.trace_add("write", _update_mode)
@@ -4583,10 +4771,16 @@ class ExperimentRunnerGUI(ctk.CTk):
             if not name:
                 messagebox.showerror("Error", "Please enter an experiment name.")
                 return
-            slug = "".join(c for c in name.lower().replace(" ", "_").replace("-", "_") if c.isalnum() or c == "_")
+            slug = "".join(
+                c
+                for c in name.lower().replace(" ", "_").replace("-", "_")
+                if c.isalnum() or c == "_"
+            )
             filepath = self.research_dir / "experiments" / f"run_{slug}.py"
             if filepath.exists():
-                if not messagebox.askyesno("Overwrite?", f"run_{slug}.py already exists. Overwrite?"):
+                if not messagebox.askyesno(
+                    "Overwrite?", f"run_{slug}.py already exists. Overwrite?"
+                ):
                     return
             try:
                 if _source_var.get() == "import":
@@ -4597,10 +4791,16 @@ class ExperimentRunnerGUI(ctk.CTk):
                     shutil.copy2(src, filepath)
                 else:
                     filepath.write_text(
-                        self._get_experiment_template(name, desc_entry.get("0.0", "end").strip(), template_menu.get())
+                        self._get_experiment_template(
+                            name,
+                            desc_entry.get("0.0", "end").strip(),
+                            template_menu.get(),
+                        )
                     )
                 self._log(f"[EXPERIMENTS] Added: {filepath.name}", "#27ae60")
-                messagebox.showinfo("Success", f"Experiment '{name}' added successfully!")
+                messagebox.showinfo(
+                    "Success", f"Experiment '{name}' added successfully!"
+                )
                 self._reload_experiments()
                 dialog.destroy()
             except Exception as e:
@@ -4609,12 +4809,20 @@ class ExperimentRunnerGUI(ctk.CTk):
         btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
         btn_frame.pack(pady=15)
         ctk.CTkButton(
-            btn_frame, text="Add Experiment", command=create_experiment,
-            fg_color="#27ae60", hover_color="#219150", width=130,
+            btn_frame,
+            text="Add Experiment",
+            command=create_experiment,
+            fg_color="#27ae60",
+            hover_color="#219150",
+            width=130,
         ).pack(side="left", padx=5)
         ctk.CTkButton(
-            btn_frame, text="Cancel", command=dialog.destroy,
-            fg_color="#e74c3c", hover_color="#c0392b", width=100,
+            btn_frame,
+            text="Cancel",
+            command=dialog.destroy,
+            fg_color="#e74c3c",
+            hover_color="#c0392b",
+            width=100,
         ).pack(side="left", padx=5)
 
     def _get_experiment_template(
@@ -6062,7 +6270,7 @@ apgi-research/
 def main() -> None:
     \"\"\"Main experiment function.\"\"\"
     logger.info("Starting experiment")
-    
+
     try:
         result = run_experiment()
         logger.info(f"Completed: {result}")
@@ -6149,14 +6357,14 @@ def run_experiment() -> dict:
     \"\"\"Process sample data.\"\"\"
     import pandas as pd
     import numpy as np
-    
+
     # Load data
     data = pd.read_csv("sample.csv")
-    
+
     # Process
     processed = data.dropna()
     summary = processed.describe()
-    
+
     return {
         "status": "success",
         "rows_processed": len(processed),
@@ -6370,6 +6578,7 @@ Internal Research Use Only
         """Show system information."""
         import platform
         import sys
+        from datetime import datetime
 
         system_info = f"""# System Information
 

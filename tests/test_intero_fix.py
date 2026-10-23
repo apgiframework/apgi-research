@@ -2,8 +2,17 @@
 """Final validation of interoceptive gating fix."""
 
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/Users/lesoto/Sites/PYTHON/apgi-research")
+if "pytest" in sys.modules:
+    import pytest
+
+    pytest.skip(
+        "manual validation script; run directly with python",
+        allow_module_level=True,
+    )
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import experiments.run_interoceptive_gating as igo
 from experiments.run_interoceptive_gating import EnhancedInteroceptiveGatingRunner

@@ -612,15 +612,15 @@ def generate_html_report(analysis: Dict, issues: List[Dict], fixes: Dict) -> str
             --error: #e74c3c;
         }}
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ 
+        body {{
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: var(--bg-dark);
             color: var(--text);
             line-height: 1.6;
         }}
         .container {{ max-width: 1400px; margin: 0 auto; padding: 20px; }}
-        header {{ 
-            text-align: center; 
+        header {{
+            text-align: center;
             padding: 40px 20px;
             background: linear-gradient(135deg, var(--accent), var(--highlight));
             border-radius: 15px;
@@ -640,15 +640,15 @@ def generate_html_report(analysis: Dict, issues: List[Dict], fixes: Dict) -> str
             border-radius: 12px;
             border-left: 4px solid var(--highlight);
         }}
-        .summary-card h3 {{ 
-            font-size: 0.9em; 
+        .summary-card h3 {{
+            font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
             opacity: 0.8;
             margin-bottom: 10px;
         }}
-        .summary-card .value {{ 
-            font-size: 2.5em; 
+        .summary-card .value {{
+            font-size: 2.5em;
             font-weight: bold;
             color: var(--highlight);
         }}
@@ -942,7 +942,7 @@ def generate_html_report(analysis: Dict, issues: List[Dict], fixes: Dict) -> str
                         }},
                         x: {{
                             grid: {{ display: false }},
-                            ticks: {{ 
+                            ticks: {{
                                 color: '#eaeaea',
                                 maxRotation: 45,
                                 minRotation: 45

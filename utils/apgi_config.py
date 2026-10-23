@@ -23,7 +23,7 @@ try:
 
     YAML_AVAILABLE = True
 except ImportError:
-    yaml = None  # type: ignore[assignment]
+    yaml = None
     YAML_AVAILABLE = False
 
 # Check if Pydantic is available
@@ -284,7 +284,7 @@ class ConfigManager:
 
         if type_hint and value is not None:
             try:
-                if type_hint == bool and isinstance(value, str):
+                if type_hint is bool and isinstance(value, str):
                     value = value.lower() in ("true", "1", "yes", "on")
                 elif callable(type_hint):
                     value = type_hint(value)  # type: ignore[call-arg]
@@ -314,7 +314,7 @@ class ConfigManager:
         }
 
         try:
-            return APGIExperimentConfigSchema(**config_dict)  # type: ignore[arg-type]
+            return APGIExperimentConfigSchema(**config_dict)
         except ValidationError as e:
             # Return defaults on validation error, but log
             import logging
@@ -336,7 +336,7 @@ class ConfigManager:
             ),
         }
 
-        return APGISecurityConfigSchema(**config_dict)  # type: ignore[arg-type]
+        return APGISecurityConfigSchema(**config_dict)
 
     def get_metrics_config(self) -> APGIMetricsConfigSchema:
         """Get metrics configuration."""
@@ -349,7 +349,7 @@ class ConfigManager:
             "json_logging": self.get("metrics_json_logging", True, bool),
         }
 
-        return APGIMetricsConfigSchema(**config_dict)  # type: ignore[arg-type]
+        return APGIMetricsConfigSchema(**config_dict)
 
     def get_source(self, key: str) -> Optional[str]:
         """Get the source of a configuration value."""

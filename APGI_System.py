@@ -27,10 +27,10 @@ PARAMETER NOTATION STANDARD
 beta_som: Somatic modulation gain (dimensionless) in [0.3, 0.8]
            Variable name: `beta`
            Controls exponential amplification: Pi_eff = Pi * exp(beta_som * M)
-           
+
 Pi       : Interoceptive precision (inverse variance) in [0.1, 15]
            Reliability of body-state prediction errors
-           
+
 M(c,a)   : Somatic marker value in [-2, +2]
            vmPFC-insula connectivity strength for context-action pair
 
@@ -38,7 +38,7 @@ HIERARCHICAL/SPECTRAL PARAMETERS:
 beta_spec: Spectral exponent of aperiodic activity in [0.8, 2.0]
            Characterizes power-law: PSD ~ 1/f^beta_spec
            Wakefulness: 0.8-1.2, Sleep: 1.5-2.0
-           
+
 tau_l    : Intrinsic timescale at hierarchical level l
            Autocorrelation decay constant
            Level 1: 50-100 ms, Level 5: 2-10 s
@@ -47,17 +47,17 @@ THRESHOLD PARAMETERS:
 theta_t   : Ignition threshold (z-score units) in [1.0, 10.0]
            Dynamic threshold for global broadcast
            Baseline: theta_0 approximately 3.0 sigma (typical)
-           
+
 Delta_theta_circ: Circadian modulation of threshold
            Cortisol-dependent inverted-U function
-           
+
 Delta_theta_ultr: Ultradian modulation (~90-min oscillation)
            Neuromodulator depletion effect
 
 OTHER BETA PARAMETERS (NOT beta_som or beta_spec):
 beta_M   : Sensitivity for somatic marker tanh function
            Used in: M_star(epsilon_i) = tanh(beta_M * epsilon_i)
-           
+
 beta_cross: Cross-level coupling strength
            Used in: Pi_l_minus_1 = Pi_l_minus_1 * (1 + beta_cross * B_l)
 

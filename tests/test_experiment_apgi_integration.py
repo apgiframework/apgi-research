@@ -476,21 +476,21 @@ runner = ExperimentAPGIRunner(mock_base_runner, mock_params)
 original_process_trial = runner.apgi.process_trial
 try:
     runner.apgi.process_trial = MagicMock(return_value={"pi": 0.7, "theta": 0.5})
-    
+
     result = runner.process_trial_with_apgi(
         observed=1.0, predicted=0.8, trial_type="neutral"
     )
-    
+
     print(f"Result: {result}")
     print(f"Expected: {{'pi': 0.7, 'theta': 0.5}}")
     print(f"Type of result: {type(result)}")
-    
+
     # The real method returns a full APGI result, so we check for expected keys
     assert "pi" in result  # nosec: B101 - Test assertion
     assert "theta" in result  # nosec: B101 - Test assertion
     assert len(runner.apgi_metrics_history) == 1  # nosec: B101 - Test assertion
     runner.apgi.process_trial.assert_called_once()
-    
+
 finally:
     # Restore the original method
     runner.apgi.process_trial = original_process_trial

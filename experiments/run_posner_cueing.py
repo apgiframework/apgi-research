@@ -27,7 +27,7 @@ import numpy as np
 from apgi_cli import cli_entrypoint, create_standard_parser
 
 # APGI Integration
-from apgi_integration import APGIIntegration, APGIParameters
+from apgi_integration import APGIIntegration
 
 from .experiment_apgi_integration import APGIParameters
 from .prepare_posner_cueing import APGI_PARAMS, TIME_BUDGET, CueType, PosnerExperiment

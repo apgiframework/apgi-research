@@ -31,8 +31,11 @@ from apgi_cli import cli_entrypoint, create_standard_parser
 # APGI Integration
 from apgi_integration import APGIIntegration, APGIParameters, format_apgi_output
 
-from .prepare_dual_n_back import APGI_PARAMS  # APGI parameters from prepare file
-from .prepare_dual_n_back import TIME_BUDGET, DualNBackExperiment
+from .prepare_dual_n_back import (
+    APGI_PARAMS,  # APGI parameters from prepare file
+    TIME_BUDGET,
+    DualNBackExperiment,
+)
 from .ultimate_apgi_template import (
     HierarchicalProcessor,
     PrecisionExpectationState,

@@ -29,8 +29,12 @@ from apgi_cli import cli_entrypoint, create_standard_parser
 # APGI Integration - imports the dynamical system for tracking ignition, surprise, somatic markers
 from apgi_integration import APGIIntegration, APGIParameters, format_apgi_output
 
-from .prepare_visual_search import APGI_PARAMS  # APGI parameters from prepare file
-from .prepare_visual_search import TIME_BUDGET, SearchType, VSExperiment
+from .prepare_visual_search import (
+    APGI_PARAMS,  # APGI parameters from prepare file
+    TIME_BUDGET,
+    SearchType,
+    VSExperiment,
+)
 from .ultimate_apgi_template import (
     HierarchicalProcessor,
     PrecisionExpectationState,

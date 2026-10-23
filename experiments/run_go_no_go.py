@@ -31,8 +31,12 @@ from apgi_cli import cli_entrypoint, create_standard_parser
 # APGI Integration
 from apgi_integration import APGIIntegration, APGIParameters, format_apgi_output
 
-from .prepare_go_no_go import APGI_PARAMS  # APGI parameters from prepare file
-from .prepare_go_no_go import TIME_BUDGET, GoNoGoExperiment, TrialType
+from .prepare_go_no_go import (
+    APGI_PARAMS,  # APGI parameters from prepare file
+    TIME_BUDGET,
+    GoNoGoExperiment,
+    TrialType,
+)
 from .ultimate_apgi_template import (
     HierarchicalProcessor,
     PrecisionExpectationState,

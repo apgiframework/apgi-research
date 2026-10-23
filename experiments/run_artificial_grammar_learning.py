@@ -25,18 +25,19 @@ import time
 from typing import Any, Dict, cast
 
 import numpy as np
+
+# Standardized APGI imports
+# APGI Integration
+from apgi_integration import APGIIntegration, APGIParameters, format_apgi_output
 from experiments.ultimate_apgi_template import (
     HierarchicalProcessor,
     PrecisionExpectationState,
     UltimateAPGIParameters,
 )
 
-# Standardized APGI imports
-# APGI Integration
-from apgi_integration import APGIIntegration, APGIParameters, format_apgi_output
 from .prepare_artificial_grammar_learning import (
-    AGExperiment,
     APGI_PARAMS,
+    AGExperiment,
 )
 
 # ---------------------------------------------------------------------------

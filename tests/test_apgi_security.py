@@ -166,9 +166,7 @@ class TestSecureSubprocessWrapper:
 
 class TestSecureRun:
     def test_secure_run_allows_whitelisted_list_command(self):
-        result = secure_run(
-            ["python3", "-c", "print('hello')"], capture_output=True
-        )
+        result = secure_run(["python3", "-c", "print('hello')"], capture_output=True)
         assert result.returncode == 0
         assert b"hello" in result.stdout
 
@@ -339,7 +337,9 @@ class TestRequireAllowedSubprocessDecorator:
 
         result = my_func()
         assert result == "ok"
-        assert my_func._security_policy.allowed_commands == DEFAULT_ALLOWED_SUBPROCESS_CMDS
+        assert (
+            my_func._security_policy.allowed_commands == DEFAULT_ALLOWED_SUBPROCESS_CMDS
+        )
 
 
 # ---------------------------------------------------------------------------

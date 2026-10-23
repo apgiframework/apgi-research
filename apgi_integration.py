@@ -1198,19 +1198,19 @@ APGI Metrics Report
 Ignition Dynamics:
   - Ignition Rate: {s['ignition_rate']:.2%}
   - Mean Ignition Probability: {s.get('mean_ignition_prob', 0):.3f}
-  
+
 Surprise Accumulation:
   - Mean Surprise: {s['mean_surprise']:.3f}
   - Final Surprise: {s['final_surprise']:.3f}
-  
+
 Threshold Dynamics:
   - Mean Threshold: {s['mean_threshold']:.3f}
   - Final Threshold: {s['final_threshold']:.3f}
-  
+
 Somatic Markers:
   - Mean Somatic Marker: {s['mean_somatic_marker']:.3f}
   - Final Somatic Marker: {s['final_somatic_marker']:.3f}
-  
+
 Metabolic Cost:
   - Total Metabolic Cost: {s['metabolic_cost']:.3f}
 """

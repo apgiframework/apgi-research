@@ -30,8 +30,12 @@ from apgi_cli import cli_entrypoint, create_standard_parser
 from apgi_integration import APGIIntegration, APGIParameters, format_apgi_output
 
 # Import fixed configurations from prepare_attentional_blink.py
-from .prepare_attentional_blink import APGI_PARAMS  # APGI parameters from prepare file
-from .prepare_attentional_blink import TIME_BUDGET, ABExperiment, TrialType
+from .prepare_attentional_blink import (
+    APGI_PARAMS,  # APGI parameters from prepare file
+    TIME_BUDGET,
+    ABExperiment,
+    TrialType,
+)
 from .ultimate_apgi_template import (
     HierarchicalProcessor,
     PrecisionExpectationState,
