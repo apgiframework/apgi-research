@@ -60,3 +60,11 @@ backups/
 .mypy_cache/
 .hypothesis/
 config/presets/
+
+# Test-run artifacts
+.apgi_checkpoints/
+apgi_analysis_report.html
+audit_trail.jsonl
+progress/
+test_reports/
+xpr_memory.json
