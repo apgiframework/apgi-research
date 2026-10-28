@@ -490,9 +490,27 @@ results = kernel.finalize_run(run_context)
    # Using uv (recommended)
    uv sync
    
-   # Using pip
-   pip install -r requirements.txt
+   # Using pip (always inside a virtual environment, see below)
+   pip install -e .
    ```
+
+   **macOS / Homebrew Python.** Homebrew marks its Python as externally managed
+   (PEP 668), so a bare `pip install` is refused. Do not use
+   `--break-system-packages`; create a virtual environment instead:
+
+   ```bash
+   brew install python@3.13 python-tk@3.13   # python-tk provides tkinter for the GUI
+   python3.13 -m venv .venv
+   source .venv/bin/activate
+   pip install -e ".[dev]"
+   ```
+
+   Use Python 3.10-3.13: `torch` and other binary dependencies usually publish
+   wheels only for released Python versions, so a pre-release interpreter
+   (for example 3.15) will fail to resolve them. If `pip` or `python` prints
+   errors about `__editable__.*.pth` files from other projects, those are stale
+   installs in the system site-packages; the virtual environment above avoids
+   them (remove them with `pip uninstall apgi apgi-framework` outside the venv).
 
 2. **Development Dependencies**
 
@@ -701,7 +719,7 @@ This project is licensed under the MIT License. See LICENSE file for details.
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Install dependencies (inside a virtual environment, see Installation above)
 pip install -e .
 
 # Set required environment variables
