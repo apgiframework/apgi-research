@@ -25,10 +25,40 @@ dependencies = [
     "pydantic>=2.0.0",
 ]
 
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+# Flat layout: the project's modules sit in the repository root next to the
+# `utils`, `experiments` and `visualization_helpers` packages. List them
+# explicitly; `paper-miner.py` is a script (its hyphen makes it unimportable).
+[tool.setuptools]
+py-modules = [
+    "APGI_System",
+    "GUI_auto_improve_experiments",
+    "analyze_experiments",
+    "apgi_audit",
+    "apgi_cli",
+    "apgi_implementation_template",
+    "apgi_integration",
+    "apgi_metrics",
+    "apgi_orchestration_kernel",
+    "apgi_security_adapters",
+    "apgi_security_consolidated",
+    "autonomous_agent",
+    "human_layer",
+    "hypothesis_approval_board",
+    "memory_store",
+    "prepare",
+    "progress_tracking",
+    "train",
+    "validation",
+    "xpr_agent_engine",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["apgi*"]
-exclude = ["tests*", "experiments*", "docs*", "htmlcov*", "test_reports*", ".benchmarks*", ".apgi_*"]
+include = ["utils*", "experiments*", "visualization_helpers*"]
 
 [project.optional-dependencies]
 dev = [
