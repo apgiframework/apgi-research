@@ -15,6 +15,7 @@ help:
 	@echo "  dev-install  - Install in development mode"
 	@echo "  docs         - Generate documentation"
 	@echo "  protocols-check - Validate protocol specification 1.1.0 (protocols/)"
+	@echo "  ci-gates     - Run the required research gates (sequencing, locking, timing, form balance)"
 
 venv:
 	python3 -m venv .venv
@@ -38,6 +39,9 @@ test-full:
 
 protocols-check:
 	python3 scripts/validate_protocols.py
+
+ci-gates:
+	python3 scripts/ci_gates.py
 
 lint:
 	@echo "Running black formatting (skipping files with syntax errors)..."

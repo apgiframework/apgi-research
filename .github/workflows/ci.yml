@@ -88,6 +88,30 @@ jobs:
         fail_ci_if_error: false
 
   # ---------------------------------------------------------------------------
+  # Required research gates (XC-CI-04): make each job a required status check
+  # on protected branches (Settings > Branches); that setting is not in code.
+  # ---------------------------------------------------------------------------
+  research-gates:
+    name: Research Gates (${{ matrix.gate }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install dependencies
+      run: pip install jsonschema pytest
+    - name: Run gate
+      run: python scripts/ci_gates.py --gate ${{ matrix.gate }}
+    - name: Gate mutation tests
+      run: pytest --noconftest tests/test_ci_gates.py -q -p no:cacheprovider
+
+  # ---------------------------------------------------------------------------
   # Performance Benchmark Gates
   # ---------------------------------------------------------------------------
   benchmark:
