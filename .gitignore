@@ -68,3 +68,7 @@ audit_trail.jsonl
 progress/
 test_reports/
 xpr_memory.json
+
+# Coverage output
+.coverage
+coverage.xml
