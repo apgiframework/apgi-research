@@ -23,6 +23,16 @@ checks must also be inspected before declaring XC-CI-04 complete. Required check
 names are `Research Gates (trial-sequencing)`, `Research Gates (protocol-locking)`,
 `Research Gates (timing-contracts)`, and `Research Gates (parallel-form-balance)`.
 
+## Reference model draft
+
+`../mathematical-contracts.yaml` is a JSON-compatible YAML draft for S1-REG-04
+and S1-REG-04.1–04.9. It proposes equations, input normalization, units, update
+order, reset/refractory semantics, integration, observations and pi_i_eff. It
+records differences from the existing simulator and explicit unresolved choices.
+It is not qualified or registered and does not authorize collection. The supplied
+S1-REG-04 rows remain Not Started in the source register; draft preparation is
+implementation progress, not scientific approval.
+
 ## Required decisions and evidence
 
 - S1-REG-04: approved shared reference model and registered version, required for

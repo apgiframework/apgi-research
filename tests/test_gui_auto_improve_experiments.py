@@ -2184,3 +2184,11 @@ class TestGUICoreFunctionality:
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_import_preserves_selected_matplotlib_backend():
+    """Importing GUI helpers must not switch a headless analysis backend."""
+    assert spec is not None and spec.loader is not None
+    with patch.object(gui.matplotlib, "use") as switch_backend:
+        spec.loader.exec_module(gui)
+    switch_backend.assert_not_called()

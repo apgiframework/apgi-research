@@ -1,0 +1,207 @@
+{
+  "contract_version": "0.1.0-draft",
+  "task_id": "S1-REG-04",
+  "status": "draft_for_scientific_review",
+  "qualified": false,
+  "approval": {
+    "researcher": null,
+    "approved_at": null,
+    "registration_uri": null
+  },
+  "provenance": {
+    "repository": "apgiframework/apgi-research",
+    "source_commit": "a578d2f8e4611a8cf49a4e8cedeaf157f9596769",
+    "source": "APGI_System.py",
+    "scope": "Candidate six-state reference model; not a claim that the current simulator conforms."
+  },
+  "notation": {
+    "sigma": "logistic sigmoid",
+    "clip": "closed-interval clamp",
+    "Z": "independent standard normal per state and step",
+    "old": "state at start of step",
+    "new": "state at end of step"
+  },
+  "equations": {
+    "prediction_error": "eps_e = observed_e - predicted_e; eps_i = observed_i - predicted_i",
+    "normalisation": "z_e = (eps_e - calibration_mean_e) / calibration_sd_e; z_i = (eps_i - calibration_mean_i) / calibration_sd_i",
+    "pi_i_eff": "pi_i_eff = pi_i_baseline * (1 + beta_som * sigma(M - M_0))",
+    "drive": "I = (0.5 * pi_e * z_e^2 + 0.5 * pi_i_eff * z_i^2) / tau_drive",
+    "signal": "dS = (-S/tau_S + I) * dt + sigma_S * sqrt(dt) * Z_S",
+    "threshold_baseline": "theta_base = theta_sleep + (1 - A) * (theta_alert - theta_sleep)",
+    "threshold": "dtheta = ((theta_base-theta)/tau_theta + gamma_M*M + lambda_S*S) * dt + sigma_theta*sqrt(dt)*Z_theta",
+    "somatic": "dM = ((tanh(beta_M*z_i)-M)/tau_M + gamma_context*C) * dt + sigma_M*sqrt(dt)*Z_M",
+    "arousal": "dA = ((A_target-A)/tau_A)*dt + sigma_A*sqrt(dt)*Z_A",
+    "precision_e": "dpi_e = alpha_Pi*(pi_e_target-pi_e)*dt + sigma_Pi*sqrt(dt)*Z_Pi_e",
+    "precision_i": "dpi_i_baseline = alpha_Pi*(pi_i_target-pi_i_baseline)*dt + sigma_Pi*sqrt(dt)*Z_Pi_i",
+    "ignition": "p_ignition = sigma(gamma_sig*(S_new-theta_new)); B = 1[U < p_ignition] when not refractory, else 0",
+    "reset": "S_post = (1-rho)*S_new if B=1 else S_new"
+  },
+  "inputs": {
+    "observed_e": {
+      "units": "instrument-specific raw units",
+      "normalisation": "paired calibration mean/sd for exteroceptive error; frozen before main trials"
+    },
+    "predicted_e": {
+      "units": "same as observed_e",
+      "normalisation": "subtract before applying error calibration"
+    },
+    "observed_i": {
+      "units": "instrument-specific raw units",
+      "normalisation": "paired calibration mean/sd for interoceptive error; frozen before main trials"
+    },
+    "predicted_i": {
+      "units": "same as observed_i",
+      "normalisation": "subtract before applying error calibration"
+    },
+    "C": {
+      "units": "dimensionless",
+      "range": [
+        -1,
+        1
+      ],
+      "normalisation": "predeclared task mapping; reject out-of-range input"
+    },
+    "A_target": {
+      "units": "dimensionless",
+      "range": [
+        0,
+        1
+      ],
+      "normalisation": "explicit input from frozen protocol; no implicit clock or history-window calculation"
+    },
+    "pi_e_target": {
+      "units": "inverse variance of normalised exteroceptive error",
+      "range": [
+        0.01,
+        null
+      ]
+    },
+    "pi_i_target": {
+      "units": "inverse variance of normalised interoceptive error",
+      "range": [
+        0.01,
+        null
+      ]
+    }
+  },
+  "units": {
+    "time": "seconds",
+    "dt": "seconds",
+    "tau_S": "seconds",
+    "tau_drive": "seconds",
+    "tau_theta": "seconds",
+    "tau_M": "seconds",
+    "tau_A": "seconds",
+    "S": "nats",
+    "theta": "nats",
+    "I": "nats/second",
+    "M": "dimensionless",
+    "M_0": "dimensionless",
+    "A": "dimensionless",
+    "beta_som": "dimensionless",
+    "beta_M": "dimensionless per normalised error",
+    "gamma_sig": "1/nat",
+    "gamma_M": "nats/second",
+    "lambda_S": "1/second",
+    "gamma_context": "1/second",
+    "alpha_Pi": "1/second",
+    "sigma_S": "nats/sqrt(second)",
+    "sigma_theta": "nats/sqrt(second)",
+    "sigma_M": "1/sqrt(second)",
+    "sigma_A": "1/sqrt(second)",
+    "sigma_Pi": "precision/sqrt(second)"
+  },
+  "integration": {
+    "scheme": "Euler-Maruyama",
+    "dt_seconds": 0.01,
+    "state_evaluation": "all derivatives evaluated on old state (simultaneous update)",
+    "float_type": "IEEE-754 binary64",
+    "noise_order": [
+      "S",
+      "theta",
+      "M",
+      "A",
+      "pi_e",
+      "pi_i_baseline"
+    ],
+    "random_generator": "NumPy PCG64 with explicit seed and serialised state; one generator for all noise and ignition draws",
+    "reject": "nonfinite values, nonpositive dt or calibration sd, negative noise scales, missing calibration provenance"
+  },
+  "update_order": [
+    "validate inputs and frozen calibration",
+    "compute errors and z scores",
+    "compute pi_i_eff and I from old state",
+    "draw six independent normal variates in declared order",
+    "compute all candidate states from old state",
+    "project S>=0, theta>=0.01, M in [-2,2], A in [0,1], precisions>=0.01",
+    "evaluate refractory status at step start",
+    "draw one uniform variate every step, including refractory steps",
+    "evaluate ignition probability on new S and theta",
+    "apply signal reset and schedule refractory end if ignition occurs",
+    "increment clock; persist pre-reset and post-reset state, event, input and RNG state"
+  ],
+  "reset": {
+    "initial_state": {
+      "S": 0,
+      "theta": "theta_0",
+      "M": 0,
+      "A": "A_0",
+      "pi_e": 1,
+      "pi_i_baseline": 1,
+      "B": 0,
+      "time": 0
+    },
+    "post_ignition": "only S is multiplied by (1-rho); rho must be in [0,1]",
+    "session_reset": "clear event history and refractory end; initialise generator from declared session seed",
+    "checkpoint_resume": "restore all states, clock, refractory end, frozen calibration, protocol hash and exact RNG state"
+  },
+  "refractory": {
+    "duration_seconds": null,
+    "status": "researcher_decision_required",
+    "semantics": "suppress ignition until step-start time >= refractory_end; latent state continues evolving; duration must be an integer multiple of dt"
+  },
+  "observation_model": {
+    "status": "researcher_decision_required",
+    "candidate": "p(present response)=lapse/2 + (1-lapse)*sigma(response_gain*(max_pre_reset_S-response_criterion))",
+    "confidence": "ordered-logit thresholds on declared evidence; threshold values and noise must be fixed before fitting",
+    "reaction_time": "not yet specified; do not substitute simulated ignition latency for observed motor response time",
+    "awareness": "ordered categorical response; no deterministic mapping from B to awareness assumed",
+    "missing": "preserve missing responses explicitly; do not impute absent"
+  },
+  "pi_i_eff": {
+    "source": "CoreIgnitionSystem.effective_interoceptive_precision",
+    "formula": "pi_i_baseline * (1 + beta_som * sigma(M-M_0))",
+    "constraints": [
+      "pi_i_baseline>0",
+      "beta_som>=0",
+      "finite M and M_0"
+    ],
+    "identifiability": "baseline precision and somatic gain require the registered two-stage anchoring design; do not claim independent recovery from their effective product"
+  },
+  "review_decisions": [
+    "Approve fixed calibration normalisation instead of current raw-error use.",
+    "Approve explicit tau_drive for dimensional consistency; determine its value.",
+    "Approve simultaneous derivative evaluation instead of existing sequential updates.",
+    "Resolve arousal/threshold direction: current baseline formula decreases with A despite sleep/alert parameter names.",
+    "Select refractory duration; current step implementation has no refractory gate.",
+    "Approve observation equations and all parameter priors/bounds, lapse and confidence thresholds.",
+    "Select step size after numerical convergence and parameter-recovery studies.",
+    "Reconcile beta_som defaults with registered ranges; existing beta=1.5 is outside [0.3,0.7].",
+    "Approve RNG policy; existing step creates unseeded default_rng instances in dynamics and uses separate global ignition randomness."
+  ],
+  "qualification_requirements": [
+    "Every review decision resolved and recorded",
+    "Every parameter has units, bounds and registered value/prior",
+    "Frozen reference implementation with repository commit and environment lock",
+    "Step-halving convergence report with prospectively selected tolerances",
+    "Deterministic regeneration and checkpoint equivalence",
+    "Synthetic parameter recovery including identifiability failures",
+    "Researcher approval and registration URI"
+  ],
+  "acceptance_tolerances": {
+    "absolute": null,
+    "relative": null,
+    "status": "must be set prospectively by observable; no test may choose its own tolerance"
+  },
+  "collection_authorized": false
+}
