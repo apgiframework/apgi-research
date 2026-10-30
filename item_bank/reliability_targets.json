@@ -1,0 +1,10 @@
+{
+  "targets_version": "1.0.0",
+  "status": "frozen",
+  "note": "Set before collection (S1-L1-17). Changing any value requires a new targets_version, a new lock hash in reliability_targets.sha256, and a registered amendment.",
+  "internal_consistency": {"statistic": "McDonald omega", "minimum_per_subscale": 0.80},
+  "test_retest": {"statistic": "ICC(2,1)", "minimum": 0.70, "interval_days": [14, 21]},
+  "long_term_stability": {"interval_months": 6, "requirement": "report"},
+  "factor_structure": {"methods": ["EFA", "CFA"], "samples": "independent"},
+  "self_report_vs_behaviour": {"statistic": "Pearson r", "minimum_abs": 0.15}
+}

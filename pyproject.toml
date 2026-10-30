@@ -32,6 +32,9 @@ build-backend = "setuptools.build_meta"
 # Flat layout: the project's modules sit in the repository root next to the
 # `utils`, `experiments` and `visualization_helpers` packages. List them
 # explicitly; `paper-miner.py` is a script (its hyphen makes it unimportable).
+[tool.setuptools.package-data]
+item_bank = ["*.json", "*.sha256"]
+
 [tool.setuptools]
 py-modules = [
     "APGI_System",
@@ -58,7 +61,7 @@ py-modules = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["utils*", "experiments*", "visualization_helpers*"]
+include = ["utils*", "experiments*", "visualization_helpers*", "item_bank*", "battery*"]
 
 [project.optional-dependencies]
 dev = [

@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance]
+        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance, item-bank]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
