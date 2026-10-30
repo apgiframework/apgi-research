@@ -147,3 +147,20 @@ Statuses below are the supplied baseline, not completion claims for this change.
 | S3-PIL-06.3 | Not Started | Measure comprehension |
 | S3-PIL-06.4 | Not Started | Measure reliability |
 | S3-PIL-08 | Not Started | Replace attrition and usable-record estimates with pilot figures |
+
+## Verification findings from PR #2
+
+GitHub Actions run 21 passed the four research gate jobs, lint/type checking,
+security and benchmarks. The integration job reached execution: 192 passed and
+17 failed. This is not a completed study acceptance run. The failures include
+retention/audit behavior, doubled trial counts, stale CLI expectations,
+human-control/persistence behavior, preparation mocks/pickling and LLM setup.
+
+Follow-up fixes remove the duplicate trial-count increment and preserve failed
+or skipped test outcomes across teardown in the custom JSON summary. The
+focused orchestration and reporting suite passes 31 tests locally. The separate
+headless GUI-import regression also passes. Remaining integration failures and
+native GUI validation must be resolved before a full-suite pass or merge is
+claimed. The earlier custom `Test Summary` output incorrectly overwrote failed
+outcomes on successful teardown; use pytest's actual outcome summary for those
+older runs.

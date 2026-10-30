@@ -245,8 +245,6 @@ class APGIOrchestrationKernel:
             except Exception as e:
                 logger.warning(f"Trial callback failed: {e}")
 
-        # Increment trial count in run context
-        run_context["trial_count"] += 1
         logger.debug(f"Processed trial {trial_metrics.trial_number}")
         return trial_metrics
 

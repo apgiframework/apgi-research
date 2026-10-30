@@ -958,14 +958,17 @@ def pytest_runtest_teardown(item: pytest.Item, nextitem: Optional[pytest.Item]) 
         )
 
 
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
-    """Record test result."""
-    if item.nodeid in test_results:
-        if call.excinfo is None:
-            test_results[item.nodeid]["status"] = "passed"
-        else:
-            test_results[item.nodeid]["status"] = "failed"
-            test_results[item.nodeid]["error"] = str(call.excinfo.value)
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Preserve failures across setup, call and teardown reports."""
+    result = test_results.setdefault(report.nodeid, {"status": "running"})
+    if report.failed:
+        result["status"] = "failed"
+        result["error"] = str(report.longrepr)
+    elif result["status"] != "failed":
+        if report.skipped:
+            result["status"] = "skipped"
+        elif report.when == "call" and result["status"] != "skipped":
+            result["status"] = "passed"
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
@@ -977,6 +980,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         "total_tests": len(test_results),
         "passed": sum(1 for r in test_results.values() if r["status"] == "passed"),
         "failed": sum(1 for r in test_results.values() if r["status"] == "failed"),
+        "skipped": sum(1 for r in test_results.values() if r["status"] == "skipped"),
         "total_duration": sum(r.get("duration", 0) for r in test_results.values()),
         "test_details": test_results,
     }
