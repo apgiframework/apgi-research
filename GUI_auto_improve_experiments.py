@@ -81,7 +81,9 @@ try:
 except ImportError:
     ProgressTracker = None  # type: ignore
 
-matplotlib.use("TkAgg")
+# FigureCanvasTkAgg below selects the embedded canvas explicitly. Do not
+# switch the global pyplot backend during import: analysis and headless tests
+# may already have selected Agg.
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 

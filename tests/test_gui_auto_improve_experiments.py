@@ -2184,3 +2184,23 @@ class TestGUICoreFunctionality:
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_import_preserves_selected_matplotlib_backend():
+    """Importing GUI helpers must not switch a headless analysis backend."""
+    import subprocess
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import matplotlib; matplotlib.use('Agg'); "
+            "import matplotlib.pyplot; import GUI_auto_improve_experiments; "
+            "assert matplotlib.get_backend().lower() == 'agg'",
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
