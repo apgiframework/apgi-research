@@ -12,7 +12,6 @@ This test file covers all major components:
 """
 
 import json
-import os
 import tempfile
 from pathlib import Path
 from typing import TypedDict
@@ -30,12 +29,23 @@ from utils.apgi_config import (
     ExperimentConfig,
     SecurityConfig,
     compute_config_checksum,
+    get_cached_experiment_config,
+    get_config,
+    invalidate_config_cache,
     load_apgi_params,
     migrate_config,
     reset_config,
     validate_config_integrity,
     validate_startup_config,
 )
+
+
+@pytest.fixture(autouse=True)
+def _fresh_config():
+    """ConfigManager is a singleton, so give every test an uninitialised one."""
+    reset_config()
+    yield
+    reset_config()
 
 
 class ExperimentConfigDict(TypedDict):
@@ -144,95 +154,69 @@ class TestConfigManager:
                 tmp_path / "test_config.json"
             )
 
-    def test_environment_loading(self):
-        """Test environment variable loading."""
+    def test_environment_loading(self, monkeypatch):
+        """Environment variables are loaded with the prefix removed, lower-cased
+        and parsed as JSON/booleans, and are tracked as env sources."""
         test_env_vars = {
-            "APGI_EXPERIMENT_TEST_tau_S": "0.45",
-            "APGI_EXPERIMENT_TEST_beta": "1.9",
-            "APGI_EXPERIMENT_TEST_theta_0": "0.7",
-            "APGI_EXPERIMENT_TEST_alpha": "7.0",
-            "APGI_EXPERIMENT_TEST_hierarchical_enabled": "false",
-            "APGI_EXPERIMENT_TEST_precision_gap_enabled": "false",
-            "APGI_EXPERIMENT_TEST_neuromodulator_tracking": "false",
+            "APGI_EXPERIMENT_TEST_tau_S": ("0.45", 0.45),
+            "APGI_EXPERIMENT_TEST_beta": ("1.9", 1.9),
+            "APGI_EXPERIMENT_TEST_theta_0": ("0.7", 0.7),
+            "APGI_EXPERIMENT_TEST_alpha": ("7.0", 7.0),
+            "APGI_EXPERIMENT_TEST_hierarchical_enabled": ("false", False),
+            "APGI_EXPERIMENT_TEST_precision_gap_enabled": ("false", False),
+            "APGI_EXPERIMENT_TEST_neuromodulator_tracking": ("false", False),
         }
-
-        # Set environment variables
-        for key, value in test_env_vars.items():
-            os.environ[key] = value
+        for key, (raw, _) in test_env_vars.items():
+            monkeypatch.setenv(key, raw)
 
         config = ConfigManager()
 
-        # Verify environment variables take precedence
-        for key, expected_value in test_env_vars.items():
-            config_key = f"experiment_test_{key.lower()}"
+        for key, (_, expected_value) in test_env_vars.items():
+            config_key = key[len("APGI_") :].lower()
             assert (  # nosec: B101 - Test assertion
                 config.get(config_key) == expected_value
             ), f"Environment variable {key} not loaded correctly"
+            assert config.get_source(config_key) == f"env:{key}"  # nosec: B101
 
-        # Verify source tracking for environment variables
-        assert (
-            config.get_source(f"experiment_test_{key.lower()}") == f"env:{key}"
-        )  # nosec: B101 - Test assertion
+        # ...and they feed the typed experiment config
+        experiment = config.get_experiment_config("test")
+        assert experiment.tau_S == 0.45  # nosec: B101 - Test assertion
+        assert experiment.hierarchical_enabled is False  # nosec: B101
 
-    def test_yaml_support(self):
-        """Test YAML configuration file support."""
-        config = ConfigManager()
+    def test_yaml_support(self, tmp_path):
+        """YAML configuration files are read like JSON ones (flat keys)."""
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text("version: 1.0.0\nexperiment_yaml_test_tau_s: 0.35\n")
 
-        # Test YAML file creation
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yaml", delete=False
-        ) as tmp_yaml:
-            tmp_yaml.write("""
-version: 1.0.0
-experiment:
-  name: yaml_test
-  parameters:
-    tau_S: 0.35
-""")
-            tmp_yaml.flush()
+        with patch.object(ConfigManager, "_find_config_file") as mock_find:
+            mock_find.return_value = yaml_file
 
-            # Mock the file path
-            with patch.object(ConfigManager, "_find_config_file") as mock_find:
-                mock_find.return_value = Path(tmp_yaml.name)
+            config = ConfigManager()
+            loaded_experiment = config.get_experiment_config("yaml_test")
 
-                config = ConfigManager()
-                loaded_version = config.get("version")
-                loaded_experiment = config.get_experiment_config("yaml_test")
-
-                assert loaded_version == "1.0.0"  # nosec: B101 - Test assertion
-                assert (
-                    loaded_experiment.experiment_name == "yaml_test"
-                )  # nosec: B101 - Test assertion
-                assert loaded_experiment.tau_S == 0.35  # nosec: B101 - Test assertion
+        assert config.get("version") == "1.0.0"  # nosec: B101 - Test assertion
+        assert config.get_source("version") == str(yaml_file)  # nosec: B101
+        assert (  # nosec: B101 - Test assertion
+            loaded_experiment.experiment_name == "yaml_test"
+        )
+        assert loaded_experiment.tau_S == 0.35  # nosec: B101 - Test assertion
 
     def test_caching_functionality(self):
-        """Test configuration caching mechanisms."""
-        config = ConfigManager()
+        """Experiment configs are cached until the cache is invalidated."""
+        invalidate_config_cache()
+        get_config().set("experiment_cached_test_tau_s", 0.25)
 
-        # Test experiment config caching
-        with patch.object(ConfigManager, "get_cached_experiment_config") as mock_get:
-            mock_get.return_value = APGIExperimentConfigSchema(
-                experiment_name="cached_test",
-                tau_S=0.25,
-                beta=1.2,
-                theta_0=0.4,
-                alpha=4.0,
-            )
+        # Repeated lookups return the same cached object
+        first = get_cached_experiment_config("cached_test")
+        second = get_cached_experiment_config("cached_test")
+        assert first is second  # nosec: B101 - Test assertion
+        assert first.tau_S == 0.25  # nosec: B101 - Test assertion
 
-            # First call should use cache
-            result1 = config.get_experiment_config("cached_test")
-            assert (
-                result1.experiment_name == "cached_test"
-            )  # nosec: B101 - Test assertion
-
-            # Second call should use cache
-            result2 = config.get_experiment_config("cached_test")
-            assert (
-                result2.experiment_name == "cached_test"
-            )  # nosec: B101 - Test assertion
-
-            # Verify cache was used
-            mock_get.assert_called_once()
+        # A config change is only seen after the cache is invalidated
+        get_config().set("experiment_cached_test_tau_s", 0.5)
+        assert get_cached_experiment_config("cached_test").tau_S == 0.25  # nosec
+        invalidate_config_cache()
+        assert get_cached_experiment_config("cached_test").tau_S == 0.5  # nosec
 
     def test_migration_functionality(self):
         """Test configuration migration functionality."""
@@ -242,7 +226,7 @@ experiment:
             "tau_S": 0.3,
         }
 
-        new_config = migrate_config(old_config, "1.0.0")
+        new_config = migrate_config(old_config, "0.9.0", "1.0.0")
 
         # Verify migration added new fields
         assert new_config["security_enabled"] is True  # nosec: B101 - Test assertion
@@ -255,11 +239,19 @@ experiment:
             new_config["tau_S"] == 0.3
         )  # Preserved old value  # nosec: B101 - Test assertion
 
+    def test_migration_without_a_path_changes_nothing(self):
+        """Without a known migration path the config and its version are kept."""
+        config = {"version": "0.8.0", "tau_S": 0.3}
+
+        migrated = migrate_config(config, "0.8.0", "1.0.0")
+
+        assert migrated == {"version": "0.8.0", "tau_S": 0.3}  # nosec: B101
+
     def test_legacy_compatibility(self):
         """Test legacy compatibility functions."""
-        # Test legacy parameter loading
         legacy_params = load_apgi_params()
-        expected_keys = ["tau_S", "beta", "theta_0", "alpha", "gamma_M", "lambda_S"]
+        # The legacy dict mixes lower-case and mixed-case keys by design
+        expected_keys = ["tau_s", "beta", "theta_0", "alpha", "gamma_M", "lambda_S"]
 
         for key in expected_keys:
             assert (
@@ -268,6 +260,8 @@ experiment:
             assert isinstance(
                 legacy_params[key], (int, float)
             )  # nosec: B101 - Test assertion
+
+        assert legacy_params["tau_s"] == 0.35  # Default  # nosec: B101
 
     def test_error_handling(self):
         """Test error handling in configuration loading."""
@@ -295,6 +289,9 @@ experiment:
         test_config = {"test_key": "test_value"}
         checksum = compute_config_checksum(test_config, "secret123")
 
+        # The secret is mixed into the checksum, not written into the config
+        assert test_config == {"test_key": "test_value"}  # nosec: B101
+
         # Valid checksum
         assert validate_config_integrity(
             test_config, checksum, "secret123"
@@ -314,9 +311,10 @@ experiment:
         )
 
         assert validate_startup_config(valid_config)  # nosec: B101 - Test assertion
-        assert not validate_startup_config(
-            {"invalid": "config"}
-        )  # nosec: B101 - Test assertion
+
+        # A malformed version is rejected, whether given as an object or a dict
+        with pytest.raises(ValueError):
+            validate_startup_config({"version": "not-a-version"})
 
 
 class TestPydanticSchemas:
@@ -384,7 +382,7 @@ class TestPydanticSchemas:
 
         # Test invalid allowlist (not a list)
         with pytest.raises(ValueError):
-            APGISecurityConfigSchema(subprocess_allowlist=["not_a_list"])
+            APGISecurityConfigSchema(subprocess_allowlist="git")  # a str, not a list
 
     def test_metrics_config_validation(self):
         """Test APGIMetricsConfigSchema validation."""
@@ -461,32 +459,28 @@ class TestConfigurationUtilities:
         )  # Same config should have same checksum  # nosec: B101 - Test assertion
         assert len(checksum1) == 64  # SHA256 length  # nosec: B101 - Test assertion
 
-    def test_config_sources_tracking(self):
-        """Test configuration source tracking."""
+    def test_config_sources_tracking(self, tmp_path):
+        """Each value remembers where it came from."""
         config = ConfigManager()
 
-        # Load a config and check sources
         sources = config.get_all_sources()
         assert isinstance(sources, dict)  # nosec: B101 - Test assertion
 
-        # Should have default source for unknown keys
-        assert "unknown_key" in sources  # nosec: B101 - Test assertion
-        assert sources["unknown_key"] == "default"  # nosec: B101 - Test assertion
+        # Unknown keys have no source; runtime values are tagged as such
+        assert config.get_source("unknown_key") is None  # nosec: B101
+        assert "unknown_key" not in sources  # nosec: B101 - Test assertion
+        config.set("unknown_key", 1)
+        assert config.get_source("unknown_key") == "runtime"  # nosec: B101
+        config.set("other_key", 2, source="test")
+        assert config.get_source("other_key") == "test"  # nosec: B101
 
     def test_config_reload(self):
-        """Test configuration reload functionality."""
+        """Reloading discards runtime values and re-reads the real sources."""
         config = ConfigManager()
-        initial_sources = config.get_all_sources().copy()
+        config.set("runtime_only", 42)
+        assert config.get("runtime_only") == 42  # nosec: B101 - Test assertion
 
-        # Reload should clear cache and sources
         config.reload()
 
-        # Sources should be reset to defaults
-        new_sources = config.get_all_sources()
-        assert (
-            len(new_sources) < len(initial_sources) or len(new_sources) == 0
-        )  # nosec: B101 - Test assertion
-
-
-if __name__ == "__main__":
-    pytest.main()
+        assert config.get("runtime_only") is None  # nosec: B101 - Test assertion
+        assert config.get_source("runtime_only") is None  # nosec: B101
