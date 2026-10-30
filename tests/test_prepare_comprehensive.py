@@ -1,33 +1,88 @@
 """
 Comprehensive tests for prepare.py to achieve 90%+ coverage.
 Tests all major functions, data processing, error handling, and edge cases.
+
+Filesystem work happens in pytest temp directories (module constants are
+patched), and the network, process pools and sleeps are mocked.
 """
 
 from __future__ import annotations
 
+import itertools
 import os
 import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import json
 from pathlib import Path
-from tempfile import NamedTemporaryFile
-from unittest.mock import MagicMock, patch
+from typing import Iterator
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import torch
 
 import prepare
 from prepare import (
     EVAL_TOKENS,
     MAX_SEQ_LEN,
+    MAX_SHARD,
     TIME_BUDGET,
+    VAL_SHARD,
     Tokenizer,
     download_data,
-    evaluate_bpb,
+    download_single_shard,
     make_dataloader,
+    read_shard,
 )
+
+
+@pytest.fixture
+def data_dir(tmp_path: Path) -> Iterator[Path]:
+    """Point prepare.DATA_DIR at an empty temp directory."""
+    directory = tmp_path / "data"
+    directory.mkdir()
+    with patch.object(prepare, "DATA_DIR", directory):
+        yield directory
+
+
+@pytest.fixture
+def mock_pool() -> Iterator[MagicMock]:
+    """Replace the download process pool; yields the pool instance."""
+    with patch.object(prepare, "Pool") as pool_class, patch("builtins.print"):
+        pool = pool_class.return_value.__enter__.return_value
+        pool.map.side_effect = lambda func, ids: [True] * len(ids)
+        pool.pool_class = pool_class
+        yield pool
+
+
+@pytest.fixture
+def unpinned_empty() -> Iterator[None]:
+    """Make ``torch.empty`` ignore ``pin_memory`` so CPU-only machines work.
+
+    make_dataloader pins its CPU buffer unconditionally, which current torch
+    refuses without CUDA. This keeps the packing logic testable everywhere.
+    """
+    real_empty = torch.empty
+
+    def empty(*args, pin_memory=False, **kwargs):
+        return real_empty(*args, **kwargs)
+
+    with patch.object(prepare.torch, "empty", side_effect=empty):
+        yield
+
+
+def _encoder(vocab_size: int = 8192) -> Mock:
+    """A fake tiktoken-style encoder."""
+    enc = Mock()
+    enc.n_vocab = vocab_size
+    enc.encode_single_token.return_value = 0
+    enc.encode_ordinary.side_effect = lambda text: [ord(c) for c in text]
+    enc.encode_ordinary_batch.side_effect = lambda texts, num_threads=8: [
+        [ord(c) for c in text] for text in texts
+    ]
+    enc.decode.side_effect = lambda ids: "".join(chr(i) for i in ids)
+    return enc
 
 
 class TestTokenizer:
@@ -35,75 +90,81 @@ class TestTokenizer:
 
     def test_tokenizer_initialization(self):
         """Test tokenizer initialization."""
-        tokenizer = Tokenizer("test_enc")
+        enc = _encoder(vocab_size=1234)
+        enc.encode_single_token.return_value = 7
 
-        assert hasattr(tokenizer, "tokenizer")  # nosec: B101 - Test assertion
-        assert hasattr(tokenizer, "vocab_size")  # nosec: B101 - Test assertion
+        tokenizer = Tokenizer(enc)
+
+        assert tokenizer.enc is enc  # nosec: B101 - Test assertion
+        assert tokenizer.get_vocab_size() == 1234  # nosec: B101
+        assert tokenizer.get_bos_token_id() == 7  # nosec: B101
+        enc.encode_single_token.assert_called_once_with(prepare.BOS_TOKEN)
 
     def test_bpe_evaluation(self):
-        """Test BPE evaluation."""
-        tokenizer = Tokenizer("test_enc")
+        """Encoded ids are what the byte-level evaluation metric consumes."""
+        tokenizer = Tokenizer(_encoder())
 
-        # Mock simple data
-        with patch("prepare.evaluate_bpb") as mock_evaluate:
-            mock_evaluate.return_value = (1000, 50.0)  # vocab_size, compression_ratio
+        batch = tokenizer.encode(["ab", "c"], prepend=5)
 
-            vocab_size, compression = evaluate_bpb(None, tokenizer, 16)  # type: ignore
-
-            assert vocab_size == 1000  # type: ignore[has-type]  # nosec: B101 - Test assertion
-            assert compression == 50.0  # type: ignore[has-type]  # nosec: B101 - Test assertion
+        # A BOS id is prepended to every row of a batch
+        assert batch == [[5, 97, 98], [5, 99]]  # nosec: B101 - Test assertion
 
     def test_encoding_decoding(self):
         """Test encoding and decoding."""
-        tokenizer = Tokenizer("test_enc")
+        tokenizer = Tokenizer(_encoder())
 
-        # Mock tokenizer encode/decode
-        with (
-            patch.object(tokenizer, "tokenizer.encode") as mock_encode,
-            patch.object(tokenizer, "tokenizer.decode") as mock_decode,
-        ):
+        encoded = tokenizer.encode("test string")
+        assert isinstance(encoded, list)  # nosec: B101 - Test assertion
+        assert tokenizer.decode(encoded) == "test string"  # nosec: B101
 
-            mock_encode.return_value = [1, 2, 3]
-            mock_decode.return_value = "test decoded"
+    def test_encode_prepend_by_token_name(self):
+        """A string ``prepend`` is resolved to its token id first."""
+        enc = _encoder()
+        enc.encode_single_token.side_effect = lambda token: 9 if token == "<bos>" else 0
+        tokenizer = Tokenizer(enc)
 
-            # Test encoding
-            encoded = tokenizer.encode("test string")
-            assert isinstance(encoded, list)  # nosec: B101 - Test assertion
+        assert tokenizer.encode("a", prepend="<bos>") == [9, 97]  # nosec: B101
 
-            # Test decoding
-            decoded = tokenizer.decode(encoded)
-            assert decoded == "test decoded"  # nosec: B101 - Test assertion
+    def test_encode_rejects_unsupported_input(self):
+        """Only strings and lists of strings can be encoded."""
+        with pytest.raises(ValueError, match="Invalid input type"):
+            Tokenizer(_encoder()).encode(123)
 
 
 class TestDataPreparation:
     """Tests for data preparation functions."""
 
-    def test_download_data(self):
+    def test_download_data(self, data_dir, mock_pool):
         """Test data shard downloading."""
-        with patch("prepare.download_data") as mock_download:
-            mock_download.return_value = None
+        download_data(num_shards=5)
 
+        # Five training shards plus the pinned validation shard
+        _, ids = mock_pool.map.call_args.args
+        assert ids == [*range(5), VAL_SHARD]  # nosec: B101 - Test assertion
+
+    def test_download_data_error_handling(self, data_dir, mock_pool):
+        """Test error handling in data download."""
+        mock_pool.map.side_effect = Exception("Download failed")
+
+        with pytest.raises(Exception, match="Download failed"):
             download_data(num_shards=5)
 
-            mock_download.assert_called_once_with(5)
-
-    def test_download_data_error_handling(self):
-        """Test error handling in data download."""
-        with patch("prepare.download_data") as mock_download:
-            mock_download.side_effect = Exception("Download failed")
-
-            with pytest.raises(Exception):
-                download_data(num_shards=5)
-
-    @patch("prepare.make_dataloader")
-    def test_dataloader_creation(self, mock_dataloader):
+    def test_dataloader_creation(self, unpinned_empty):
         """Test dataloader creation."""
-        mock_dataloader.return_value = MagicMock()
+        tokenizer = Mock()
+        tokenizer.get_bos_token_id.return_value = 1
+        tokenizer.encode.side_effect = lambda batch, prepend=None: [
+            [prepend, 2, 3, 4] for _ in batch
+        ]
+        batches = itertools.cycle([(["a"], 1)])
 
-        result = make_dataloader(Tokenizer("test_enc"), 32, 512, "train")
+        with patch.object(prepare, "_document_batches", return_value=batches):
+            loader = make_dataloader(tokenizer, 4, 8, "train", buffer_size=4)
+            inputs, targets, epoch = next(loader)
 
-        mock_dataloader.assert_called_once()
-        assert result is not None  # nosec: B101 - Test assertion
+        assert inputs.shape == (4, 8)  # nosec: B101 - Test assertion
+        assert targets.shape == (4, 8)  # nosec: B101 - Test assertion
+        assert epoch == 1  # nosec: B101 - Test assertion
 
     def test_integration(self):
         """Test complete data preparation workflow."""
@@ -126,24 +187,19 @@ class TestDataPreparation:
     def test_with_custom_params(self):
         """Test data preparation with custom parameters."""
         with (
-            patch("prepare.download_data") as mock_download,
-            patch("prepare.make_dataloader") as mock_dataloader,
+            patch.object(prepare, "download_data") as mock_download,
+            patch.object(
+                prepare, "list_parquet_files", return_value=[Path("shard.parquet")]
+            ),
+            patch.object(prepare, "train_tokenizer", return_value=True) as mock_train,
         ):
+            exit_code = prepare.main(
+                ["--num-shards", "10", "--download-workers", "4", "--skip-tokenizer"]
+            )
 
-            mock_download.return_value = None
-            mock_dataloader.return_value = MagicMock()
-
-            # prepare_data function not available - skip test
-            # prepare_data(
-            #     data_dir="custom_data",
-            #     num_shards=10,
-            #     batch_size=64,
-            #     seq_len=1024,
-            #     tokenizer=Tokenizer("test_enc"),
-            # )
-
-            mock_download.assert_called_once_with(10)
-            mock_dataloader.assert_called_once()
+        assert exit_code == 0  # nosec: B101 - Test assertion
+        mock_download.assert_called_once_with(10, 4)
+        mock_train.assert_not_called()  # nosec: B101 - Test assertion
 
 
 class TestConstants:
@@ -177,130 +233,96 @@ class TestConstants:
 class TestErrorHandling:
     """Tests for error handling and edge cases."""
 
-    def test_missing_data_directory(self):
-        """Test handling of missing data directory."""
-        with patch("os.path.exists", return_value=False):
-            with patch("os.makedirs") as mock_makedirs:
+    def test_missing_data_directory(self, tmp_path, mock_pool):
+        """download_data creates the data directory when it is missing."""
+        missing = tmp_path / "missing" / "data"
 
-                # prepare_data function not available - skip test(data_dir="missing_dir")
+        with patch.object(prepare, "DATA_DIR", missing):
+            download_data(num_shards=1)
 
-                mock_makedirs.assert_called_once()
+        assert missing.is_dir()  # nosec: B101 - Test assertion
 
-    def test_insufficient_disk_space(self):
-        """Test handling of insufficient disk space."""
-        with patch("shutil.disk_usage") as mock_disk_usage:
-            mock_disk_usage.return_value = (1000000000, 0)  # 1GB used, 0 free
-
-            # prepare_data function not available - skip test
-            # with patch("prepare.prepare_data") as mock_prepare:
-            #     mock_prepare.side_effect = Exception("Insufficient disk space")
-            #     with pytest.raises(Exception, match="Insufficient disk space"):
-            #         prepare_data(data_dir="test")
-
-    def test_network_timeout(self):
-        """Test handling of network timeouts."""
-        with patch("requests.get") as mock_get:
-            mock_get.side_effect = Exception("Network timeout")
-
-            with patch("prepare.download_data") as mock_download:
-                mock_download.side_effect = Exception("Network timeout")
-
-                with pytest.raises(Exception, match="Network timeout"):
-                    download_data(num_shards=1)
-
-    def test_corrupted_data_recovery(self):
-        """Test recovery from corrupted data."""
+    def test_insufficient_disk_space(self, tmp_path):
+        """A full disk surfaces as an OSError rather than being swallowed."""
         with (
-            patch("os.path.exists", side_effect=[True, False]),
-            patch("prepare.download_data") as mock_download,
+            patch.object(prepare, "DATA_DIR", tmp_path / "data"),
+            patch.object(
+                prepare.os, "makedirs", side_effect=OSError("No space left on device")
+            ),
         ):
+            with pytest.raises(OSError, match="No space left"):
+                download_data(num_shards=1)
 
-            # First call finds existing data
-            # result1 = prepare_data(data_dir="existing_data")
-            # assert result1 is not None  # Should use existing  # nosec: B101 - Test assertion
+    def test_network_timeout(self, data_dir):
+        """Test handling of network timeouts."""
+        with (
+            patch.object(
+                prepare.requests, "get", side_effect=Exception("Network timeout")
+            ),
+            patch.object(prepare.time, "sleep"),
+            patch("builtins.print"),
+        ):
+            assert download_single_shard(1) is False  # nosec: B101
 
-            # Second call with corrupted data
-            mock_download.side_effect = Exception("Data corrupted")
-            # result2 = prepare_data(data_dir="corrupted_data")
+    def test_corrupted_data_recovery(self, tmp_path):
+        """A shard that cannot be parsed reads as missing, not as a crash."""
+        (tmp_path / "shard_00001.parquet").write_bytes(b"not parquet")
 
-            # Should handle corruption gracefully
-            # assert result2 is not None  # nosec: B101 - Test assertion
+        with patch.object(prepare.pq, "read_table", side_effect=Exception("corrupt")):
+            assert read_shard(1, tmp_path) is None  # nosec: B101
+
+        # A shard that does not exist at all also reads as missing
+        assert read_shard(2, tmp_path) is None  # nosec: B101 - Test assertion
 
 
 class TestParameterValidation:
-    """Tests for parameter validation."""
+    """Tests for parameter handling."""
 
-    def test_num_shards_validation(self):
-        """Test num_shards parameter validation."""
-        # Valid values
-        for num_shards in [1, 5, 10, 50]:
-            # Should not raise exception
-            try:
-                download_data(num_shards=num_shards)
-            except ValueError:
-                pytest.fail(f"Valid num_shards {num_shards} raised ValueError")
+    def test_num_shards_validation(self, data_dir, mock_pool):
+        """Shard counts are clamped; the validation shard is always included."""
+        download_data(num_shards=MAX_SHARD + 100)
 
-        # Invalid values
-        invalid_shards = [0, -1, -5]
-        for num_shards in invalid_shards:
-            with pytest.raises(ValueError):
-                download_data(num_shards=num_shards)
+        _, ids = mock_pool.map.call_args.args
+        assert ids == [*range(MAX_SHARD), VAL_SHARD]  # nosec: B101
 
-    def test_batch_size_validation(self):
-        """Test batch_size parameter validation."""
-        # Valid batch sizes
-        for batch_size in [1, 2, 4, 8, 16, 32, 64, 128, 256]:
-            # Should not raise exception
-            try:
-                make_dataloader(
-                    Tokenizer("test_enc"), B=batch_size, T=512, split="train"
-                )
-            except ValueError:
-                pytest.fail(f"Valid batch_size {batch_size} raised ValueError")
+    @pytest.mark.parametrize("batch_size", [1, 2, 4])
+    def test_batch_size_validation(self, batch_size, unpinned_empty):
+        """The dataloader honours the requested batch size."""
+        inputs, targets, _ = self._first_batch(B=batch_size, T=8)
 
-        # Invalid batch sizes
-        invalid_batch_sizes = [0, -1, 1024, 2048]
-        for batch_size in invalid_batch_sizes:
-            with pytest.raises(ValueError):
-                make_dataloader(
-                    Tokenizer("test_enc"), B=batch_size, T=512, split="train"
-                )
+        assert inputs.shape == (batch_size, 8)  # nosec: B101 - Test assertion
+        assert targets.shape == (batch_size, 8)  # nosec: B101 - Test assertion
 
-    def test_seq_len_validation(self):
-        """Test sequence length validation."""
-        # Valid sequence lengths
-        for seq_len in [64, 128, 256, 512, 1024]:
-            # Should not raise exception
-            try:
-                make_dataloader(Tokenizer("test_enc"), B=16, T=seq_len, split="train")
-            except ValueError:
-                pytest.fail(f"Valid seq_len {seq_len} raised ValueError")
+    @pytest.mark.parametrize("seq_len", [4, 8, 16])
+    def test_seq_len_validation(self, seq_len, unpinned_empty):
+        """The dataloader honours the requested sequence length."""
+        inputs, targets, _ = self._first_batch(B=2, T=seq_len)
 
-        # Invalid sequence lengths
-        invalid_seq_lengths = [0, -1, 4096, 8192]
-        for seq_len in invalid_seq_lengths:
-            with pytest.raises(ValueError):
-                make_dataloader(Tokenizer("test_enc"), B=16, T=seq_len, split="train")
+        assert inputs.shape == (2, seq_len)  # nosec: B101 - Test assertion
+        assert targets.shape == (2, seq_len)  # nosec: B101 - Test assertion
+
+    def test_split_validation(self):
+        """Only the train and val splits are accepted."""
+        with pytest.raises(AssertionError):
+            next(make_dataloader(Mock(), B=2, T=8, split="test"))
 
     def test_data_dir_validation(self):
-        """Test data directory parameter validation."""
-        # Valid directories
-        for data_dir in ["data", "tmp/data", "/var/tmp/data"]:
-            # Should not raise exception
-            try:
-                # prepare_data function not available - skip test
-                # prepare_data(data_dir=data_dir)
-                pass
-            except ValueError:
-                pytest.fail(f"Valid data_dir {data_dir} raised ValueError")
+        """The command line rejects a non-integer shard count."""
+        with pytest.raises(SystemExit):
+            prepare.parse_args(["--num-shards", "many"])
 
-        # Invalid directories
-        invalid_dirs = ["", "root", "/etc/data"]
-        for data_dir in invalid_dirs:
-            with pytest.raises(ValueError):
-                # prepare_data function not available - skip test
-                # prepare_data(data_dir=data_dir)
-                pass
+    @staticmethod
+    def _first_batch(B: int, T: int):
+        tokenizer = Mock()
+        tokenizer.get_bos_token_id.return_value = 1
+        tokenizer.encode.side_effect = lambda batch, prepend=None: [
+            [prepend, 2, 3, 4, 5] for _ in batch
+        ]
+        batches = itertools.cycle([(["a", "b"], 1)])
+        with patch.object(prepare, "_document_batches", return_value=batches):
+            return next(
+                make_dataloader(tokenizer, B=B, T=T, split="train", buffer_size=4)
+            )
 
 
 class TestIntegration:
@@ -325,27 +347,15 @@ class TestIntegration:
             mock_tokenizer.assert_called_once()
 
     def test_preparation_with_tokenizer(self):
-        """Test data preparation with custom tokenizer."""
-        # prepare_data function not available - skip test
-        # custom_tokenizer = Tokenizer("test_enc")
-        # with (
-        #     patch("prepare.download_data"),
-        #     patch("prepare.make_dataloader") as mock_dataloader,
-        # ):
-        #     prepare_data(
-        #         data_dir=str(temp_path),
-        #         num_shards=1,
-        #         batch_size=16,
-        #         seq_len=128,
-        #         tokenizer=custom_tokenizer
-        #     )
-        #
-        #     # Verify tokenizer was used
-        #     mock_dataloader.assert_called_once()
-        #     args, kwargs = mock_dataloader.call_args
-        #     assert "tokenizer" in kwargs  # nosec: B101 - Test assertion
-        #     assert kwargs["tokenizer"] == custom_tokenizer  # nosec: B101 - Test assertion
-        pass
+        """The tokenizer step runs after the download and gates success."""
+        with (
+            patch.object(prepare, "download_data"),
+            patch.object(
+                prepare, "list_parquet_files", return_value=[Path("shard.parquet")]
+            ),
+            patch.object(prepare, "train_tokenizer", return_value=False),
+        ):
+            assert prepare.main(["--num-shards", "1"]) == 1  # nosec: B101
 
     def test_error_recovery_workflow(self):
         """Test error recovery in data preparation."""
@@ -401,83 +411,59 @@ class TestIntegration:
 class TestPerformanceAndScalability:
     """Tests for performance and scalability."""
 
-    def test_large_dataset_handling(self):
+    def test_large_dataset_handling(self, data_dir, mock_pool):
         """Test handling of large datasets."""
-        with patch("prepare.download_data") as mock_download:
+        download_data(num_shards=100, download_workers=8)
 
-            # Test with large number of shards
-            download_data(num_shards=100)
-
-            mock_download.assert_called_once_with(100)
+        # 100 training shards plus the validation shard, bounded worker count
+        mock_pool.pool_class.assert_called_once_with(processes=8)
+        _, ids = mock_pool.map.call_args.args
+        assert len(ids) == 101  # nosec: B101 - Test assertion
 
     def test_memory_efficiency(self):
-        """Test memory-efficient data processing."""
-        with patch("prepare.make_dataloader") as mock_dataloader:
+        """make_dataloader is lazy: nothing is read until a batch is requested."""
+        with patch.object(prepare, "_document_batches") as mock_batches:
+            loader = make_dataloader(Mock(), B=8, T=512, split="train", buffer_size=4)
 
-            # Test with memory-efficient settings
-            make_dataloader(
-                Tokenizer("test_enc"),  # tokenizer
-                B=8,  # Small batches
-                T=512,  # Moderate sequence length
-                split="train",  # data split
-                buffer_size=4,  # Parallel processing
-            )
+            mock_batches.assert_not_called()  # nosec: B101 - Test assertion
+            assert hasattr(loader, "__next__")  # nosec: B101 - Test assertion
 
-            mock_dataloader.assert_called_once()
-            args, kwargs = mock_dataloader.call_args
-            assert kwargs.get("num_workers", 1) == 4  # nosec: B101 - Test assertion
+    def test_checkpoint_resumption(self, data_dir, mock_pool):
+        """Shards that already exist are not downloaded again."""
+        for index in [*range(3), VAL_SHARD]:
+            (data_dir / f"shard_{index:05d}.parquet").touch()
 
-    def test_checkpoint_resumption(self):
-        """Test resumption from checkpoints."""
-        with NamedTemporaryFile() as temp_dir:
-            temp_path = Path(temp_dir.name)
+        download_data(num_shards=3)
 
-            # Create mock checkpoint
-            checkpoint_file = temp_path / "checkpoint.pt"
-            checkpoint_file.touch()
+        mock_pool.pool_class.assert_not_called()  # nosec: B101
 
-            with patch("prepare.download_data") as mock_download:
+    def test_data_integrity_checks(self, data_dir):
+        """A download that fails midway leaves neither a partial nor a final file."""
 
-                # prepare_data function not available - skip test
-                # prepare_data(
-                #     data_dir=str(temp_path), resume_from_checkpoint=str(checkpoint_file)
-                # )
+        def flaky_chunks(chunk_size=None):
+            yield b"partial"
+            raise ConnectionError("connection dropped")
 
-                # Verify checkpoint was used
-                mock_download.assert_called_once()
-                assert checkpoint_file.exists()  # nosec: B101 - Test assertion
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.iter_content.side_effect = flaky_chunks
 
-    def test_data_integrity_checks(self):
-        """Test data integrity checks."""
         with (
-            patch("prepare.download_data") as mock_download,
-            patch("os.path.getsize") as mock_getsize,
+            patch.object(prepare.requests, "get", return_value=response),
+            patch.object(prepare.time, "sleep"),
+            patch("builtins.print"),
         ):
+            assert download_single_shard(1) is False  # nosec: B101
 
-            mock_getsize.return_value = 1000000  # 1MB
+        assert list(data_dir.iterdir()) == []  # nosec: B101 - Test assertion
 
-            with patch("prepare.download_data") as mock_download:
+    def test_configuration_preservation(self, data_dir):
+        """An existing shard is preserved, never overwritten, by a later run."""
+        shard = data_dir / "shard_00001.parquet"
+        shard.write_bytes(b"original")
 
-                download_data(num_shards=1)
+        with patch.object(prepare.requests, "get") as mock_get:
+            assert download_single_shard(1) is True  # nosec: B101
 
-                # Verify integrity checks were performed
-                mock_download.assert_called_once()
-                mock_getsize.assert_called()
-
-    def test_configuration_preservation(self):
-        """Test that configuration is preserved across runs."""
-        with NamedTemporaryFile() as temp_dir:
-            temp_path = Path(temp_dir.name)
-
-            # Create initial config
-            config_file = temp_path / "config.json"
-            with open(config_file, "w") as f:
-                json.dump({"test": "config"}, f)
-
-            # prepare_data function not available - skip test
-            # with patch("prepare.prepare_data") as mock_prepare:
-            #     prepare_data(data_dir=str(temp_path), preserve_config=True)
-
-            # Verify config was preserved
-            # mock_prepare.assert_called_once()
-            # assert config_file.exists()  # nosec: B101 - Test assertion
+        mock_get.assert_not_called()  # nosec: B101 - Test assertion
+        assert shard.read_bytes() == b"original"  # nosec: B101

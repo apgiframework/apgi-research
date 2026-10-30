@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import Mock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import git
 import pytest
@@ -50,8 +50,6 @@ class TestUtilityFunctions:
             ["git", "status"],
             ["python", "script.py"],
             ["pytest", "test_file.py"],
-            ["ls", "-la"],
-            ["echo", "test"],
         ]
 
         for cmd in allowed_commands:
@@ -68,6 +66,9 @@ class TestUtilityFunctions:
             ["chmod", "777", "/etc/passwd"],
             ["mv", "/etc/passwd", "/tmp"],
             ["cp", "/etc/shadow", "/tmp"],
+            # Only the whitelisted tooling may run, not general shell utilities
+            ["ls", "-la"],
+            ["echo", "test"],
         ]
 
         for cmd in disallowed_commands:
@@ -78,13 +79,21 @@ class TestUtilityFunctions:
     def test_safe_subprocess_run(self):
         """Test safe subprocess execution."""
         # Test successful command
-        result = safe_subprocess_run(["echo", "test"])
+        result = safe_subprocess_run([sys.executable, "-c", "print('test')"])
         assert result.returncode == 0  # nosec: B101 - Test assertion
         assert "test" in result.stdout  # nosec: B101 - Test assertion
 
+    def test_safe_subprocess_run_rejects_unlisted_command(self):
+        """Commands outside the whitelist are refused before they run."""
+        with pytest.raises(ValueError, match="not in whitelist"):
+            safe_subprocess_run(["echo", "test"])
+
     def test_safe_subprocess_run_with_kwargs(self):
         """Test safe subprocess with additional arguments."""
-        result = safe_subprocess_run(["echo", "test"], cwd=tempfile.gettempdir())
+        result = safe_subprocess_run(
+            [sys.executable, "-c", "import os; print(os.getcwd())"],
+            cwd=tempfile.gettempdir(),
+        )
         assert result.returncode == 0  # nosec: B101 - Test assertion
         # Default timeout is set by the function
 
@@ -214,8 +223,8 @@ class TestRequestRetryHandler:
         with pytest.raises(Exception):
             handler.execute_with_retry(mock_func)
 
-        # Check backoff calls: 2^0, 2^1, 2^2 = 1, 2, 4 seconds
-        expected_calls = [call(1.0), call(2.0), call(4.0)]
+        # Backoff is backoff_base * 2**attempt: 2.0 * (1, 2, 4) seconds
+        expected_calls = [call(2.0), call(4.0), call(8.0)]
         mock_sleep.assert_has_calls(expected_calls)
 
 
@@ -348,11 +357,12 @@ class TestAsyncGitOperations:
         async_git = AsyncGitOperations(self.repo_path, rate_limiter)
 
         # First request should succeed
+        start_time = time.time()
         result1 = await async_git._run_git_command_with_retry(["status"])
         assert result1[0] == 0  # nosec: B101 - Test assertion
 
-        # Second request should be rate limited and wait
-        start_time = time.time()
+        # Second request should be rate limited and wait for the window that
+        # opened with the first request (part of it passes during that command)
         result2 = await async_git._run_git_command_with_retry(["status"])
         end_time = time.time()
 
@@ -591,16 +601,29 @@ class TestGitPerformanceTrackerComprehensive:
         """Test committing when git command fails."""
         tracker = GitPerformanceTracker(str(self.repo_path))
 
-        # Mock git command to raise exception
-        with patch.object(
-            tracker.repo.index if tracker.repo is not None else None,
-            "add",
-            side_effect=git.exc.GitCommandError("git error", ""),
-        ):
+        # Per-pattern staging failures are tolerated by design; a failing commit
+        # is the error path. commit_experiment opens its own git.Repo.
+        with patch("autonomous_agent.git.Repo") as mock_repo_class:
+            mock_repo = mock_repo_class.return_value
+            mock_repo.is_dirty.return_value = True
+            mock_repo.index.commit.side_effect = git.exc.GitCommandError(
+                "commit", "git error"
+            )
             modifications = {"TEST_PARAM": 0.5}
             commit_hash = tracker.commit_experiment(modifications)
 
-            assert commit_hash == "error"  # nosec: B101 - Test assertion
+        assert commit_hash == "error"  # nosec: B101 - Test assertion
+
+    def test_commit_experiment_tolerates_staging_errors(self):
+        """A pattern that cannot be staged does not abort the commit."""
+        tracker = GitPerformanceTracker(str(self.repo_path))
+
+        with patch("autonomous_agent.git.Repo") as mock_repo_class:
+            mock_repo = mock_repo_class.return_value
+            mock_repo.index.add.side_effect = git.exc.GitCommandError("add", "none")
+            mock_repo.is_dirty.return_value = False
+
+            assert tracker.commit_experiment({}) == "no_changes"  # nosec: B101
 
     def test_rollback_experiment_success(self):
         """Test successful rollback."""
@@ -623,14 +646,12 @@ class TestGitPerformanceTrackerComprehensive:
         """Test rollback failure."""
         tracker = GitPerformanceTracker(str(self.repo_path))
 
-        # Mock git reset to raise exception
-        with patch.object(
-            tracker.repo.git if tracker.repo is not None else None,
-            "reset",
-            side_effect=Exception("git error"),
-        ):
+        # rollback_experiment opens its own git.Repo, so fail the reset there
+        with patch("autonomous_agent.git.Repo") as mock_repo_class:
+            mock_repo_class.return_value.git.reset.side_effect = Exception("git error")
             result = tracker.rollback_experiment()
-            assert result is False  # nosec: B101 - Test assertion
+
+        assert result is False  # nosec: B101 - Test assertion
 
     def test_is_improvement_with_agent_direction(self):
         """Test improvement check with agent metric direction."""
@@ -843,8 +864,8 @@ class TestAutonomousAgentComprehensive:
         test_file = self.repo_path / "test.py"
         test_file.write_text("ORIGINAL_CODE")
 
-        # Apply modifications
-        modifications = {"TEST_PARAM": 0.5}
+        # Apply modifications (only allow-listed parameters are applied)
+        modifications = {"LEARNING_RATE": 0.5}
         agent._apply_modifications(str(test_file), modifications)
 
         # Should use LLM patch
@@ -866,15 +887,16 @@ class TestAutonomousAgentComprehensive:
 
         # Create test file
         test_file = self.repo_path / "test.py"
-        test_file.write_text("TEST_PARAM = 0.5\nOTHER_PARAM = 1.0")
+        test_file.write_text("LEARNING_RATE = 0.5\nOTHER_PARAM = 1.0")
 
         # Apply modifications
-        modifications = {"TEST_PARAM": 0.75}
+        modifications = {"LEARNING_RATE": 0.75}
         agent._apply_modifications(str(test_file), modifications)
 
         # Should fall back to regex
         content = test_file.read_text()
-        assert "TEST_PARAM = 0.75" in content  # nosec: B101 - Test assertion
+        assert "LEARNING_RATE = 0.75" in content  # nosec: B101 - Test assertion
+        assert "OTHER_PARAM = 1.0" in content  # nosec: B101 - Test assertion
 
     def test_apply_modifications_parameter_validation(self):
         """Test parameter validation in modifications."""
@@ -882,22 +904,23 @@ class TestAutonomousAgentComprehensive:
 
         # Create test file
         test_file = self.repo_path / "test.py"
-        test_file.write_text("VALID_PARAM = 0.5\nINVALID_PARAM = 1.0")
+        test_file.write_text("LEARNING_RATE = 0.5\nINVALID_PARAM = 1.0")
 
-        # Apply modifications with invalid parameter
+        # Apply modifications with parameters that are not on the allow-list
         modifications = {
-            "VALID_PARAM": 0.75,
+            "LEARNING_RATE": 0.75,
             "INVALID_PARAM": 2.0,
             "DANGEROUS_COMMAND": "rm -rf /",
         }
         agent._apply_modifications(str(test_file), modifications)
 
-        # Should only apply valid parameters
+        # Only allow-listed parameters are applied; the rest are skipped
         content = test_file.read_text()
-        assert "VALID_PARAM = 0.75" in content  # nosec: B101 - Test assertion
+        assert "LEARNING_RATE = 0.75" in content  # nosec: B101 - Test assertion
         assert (
-            "INVALID_PARAM = 1.0" not in content
-        )  # Should be skipped  # nosec: B101 - Test assertion
+            "INVALID_PARAM = 1.0" in content
+        )  # Left untouched  # nosec: B101 - Test assertion
+        assert "INVALID_PARAM = 2.0" not in content  # nosec: B101
         assert (
             "DANGEROUS_COMMAND" not in content
         )  # Should be skipped  # nosec: B101 - Test assertion
@@ -925,12 +948,12 @@ class TestAutonomousAgentComprehensive:
         assert metric == 0.9  # nosec: B101 - Test assertion
 
         # Test first numeric value fallback
-        results = {"text": 1.0, "numeric_value": 42, "other": 2.0}
+        results = {"text": "abc", "numeric_value": 42, "other": 2.0}
         metric = agent._extract_primary_metric(results, "unknown_experiment")
         assert metric == 42.0  # nosec: B101 - Test assertion
 
         # Test no numeric values
-        results = {"text": 1.0, "other": 2.0}
+        results = {"text": "abc", "other": "def"}
         metric = agent._extract_primary_metric(results, "unknown_experiment")
         assert metric == 0.0  # nosec: B101 - Test assertion
 
@@ -980,16 +1003,14 @@ class TestAutonomousAgentComprehensive:
         """Test session branch creation failure."""
         agent = AutonomousAgent(str(self.repo_path))
 
-        # Mock git checkout to raise exception
-        with patch.object(
-            agent.git_tracker.repo.git if agent.git_tracker.repo is not None else None,
-            "checkout",
-            side_effect=Exception("git error"),
-        ):
+        # GitPython objects reject attribute patching, so swap the whole repo
+        mock_repo = MagicMock()
+        mock_repo.git.checkout.side_effect = Exception("git error")
+        with patch.object(agent.git_tracker, "repo", mock_repo):
             agent._create_session_branch("test_experiment")
 
-            # Should handle error gracefully
-            assert agent._session_branch is None  # nosec: B101 - Test assertion
+        # Should handle error gracefully
+        assert agent._session_branch is None  # nosec: B101 - Test assertion
 
     def test_get_current_parameters_edge_cases(self):
         """Test parameter extraction with edge cases."""
@@ -1049,11 +1070,9 @@ class SomeClass:
         """Test timeout handling in experiment execution."""
         agent = AutonomousAgent(str(self.repo_path))
 
-        # Mock signal to raise timeout
-        mock_signal.side_effect = lambda sig, handler: APGITimeoutError("Timeout")
-
-        # Mock experiment modules
+        # The experiment runs past its time limit
         mock_runner = Mock()
+        mock_runner.run_experiment.side_effect = APGITimeoutError("Timeout")
         mock_run_module = Mock()
         mock_run_module.MockRunner = Mock(return_value=mock_runner)
 
@@ -1132,6 +1151,10 @@ class SomeClass:
         """Test optimization with checkpoint resume."""
         agent = AutonomousAgent(str(self.repo_path))
 
+        # No human reviewer is available: skip the interactive review checkpoint
+        agent.human_control.config["interaction_mode"] = "autonomous"
+        agent.human_control.config["configured"] = False
+
         # Create checkpoint
         checkpoint_data = {
             "experiment_name": "test",
@@ -1160,7 +1183,7 @@ class SomeClass:
         setattr(agent.git_tracker, "save_results", Mock())
         setattr(agent, "_clear_checkpoint", Mock())
 
-        results = agent.optimize_experiment("test", iterations=3, resume=True)
+        results = agent.optimize_experiment("test", iterations=4, resume=True)
 
         # Should resume from iteration 3 (2 + 1)
         assert (
@@ -1172,6 +1195,10 @@ class SomeClass:
     def test_optimize_experiment_guardrail_trigger(self):
         """Test optimization with guardrail trigger."""
         agent = AutonomousAgent(str(self.repo_path))
+
+        # No human reviewer is available: skip the interactive review checkpoint
+        agent.human_control.config["interaction_mode"] = "autonomous"
+        agent.human_control.config["configured"] = False
 
         # Mock experiment modules
         mock_runner = Mock()
@@ -1197,6 +1224,10 @@ class SomeClass:
     def test_optimize_experiment_metric_regression(self):
         """Test optimization with metric regression detection."""
         agent = AutonomousAgent(str(self.repo_path))
+
+        # No human reviewer is available: skip the interactive review checkpoint
+        agent.human_control.config["interaction_mode"] = "autonomous"
+        agent.human_control.config["configured"] = False
 
         # Mock experiment modules with decreasing performance
         mock_runner = Mock()

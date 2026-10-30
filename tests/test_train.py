@@ -11,8 +11,21 @@ from unittest.mock import patch
 import pytest
 import torch
 
-# Prevent module-level execution during import
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from tests._module_isolation import installed_module  # noqa: E402
+from tests._train_definitions import load_train_definitions  # noqa: E402
+
+# train.py is a script, so importing it would run the whole training loop.
+# Load only its definitions and make them importable as ``train`` for these
+# tests (both ``from train import X`` and ``patch("train.X")`` resolve to it).
+_train = load_train_definitions()
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _train_definitions_importable():
+    with installed_module("train", _train):
+        yield
 
 
 class TestGPTConfig:
@@ -77,23 +90,23 @@ class TestHelperFunctions:
         """Test has_ve function (Value Embedding condition)."""
         from train import has_ve
 
-        # For n_layer=12, layer 0 should have VE (0 % 2 == 11 % 2 = 1)
-        assert has_ve(0, 12) is True  # nosec: B101 - Test assertion
-        # Layer 1 should not have VE (1 % 2 == 0)
-        assert has_ve(1, 12) is False  # nosec: B101 - Test assertion
-        # Layer 11 should have VE (11 % 2 == 11 % 2 = 1)
+        # Alternating layers have VE, and the last layer always does:
+        # layer_idx % 2 == (n_layer - 1) % 2, i.e. odd layers for n_layer=12
+        assert has_ve(0, 12) is False  # nosec: B101 - Test assertion
+        assert has_ve(1, 12) is True  # nosec: B101 - Test assertion
         assert has_ve(11, 12) is True  # nosec: B101 - Test assertion
 
     def test_has_ve_different_layers(self):
         """Test has_ve with different layer counts."""
         from train import has_ve
 
-        # n_layer=8
-        assert (
-            has_ve(0, 8) is True
-        )  # 0 % 2 == 7 % 2 = 1  # nosec: B101 - Test assertion
-        assert has_ve(1, 8) is False  # nosec: B101 - Test assertion
+        # n_layer=8: the last layer (7) has VE, so the odd layers do
+        assert has_ve(0, 8) is False  # nosec: B101 - Test assertion
+        assert has_ve(1, 8) is True  # nosec: B101 - Test assertion
         assert has_ve(7, 8) is True  # nosec: B101 - Test assertion
+        # n_layer=7: the last layer (6) has VE, so the even layers do
+        assert has_ve(0, 7) is True  # nosec: B101 - Test assertion
+        assert has_ve(1, 7) is False  # nosec: B101 - Test assertion
 
     def test_apply_rotary_emb(self):
         """Test apply_rotary_emb function."""
@@ -110,14 +123,14 @@ class TestHelperFunctions:
         assert result.shape == x.shape  # nosec: B101 - Test assertion
 
     def test_apply_rotary_emb_assertion(self):
-        """Test apply_rotary_emb raises assertion for wrong dimensions."""
+        """Test apply_rotary_emb rejects inputs that are not 4D."""
         from train import apply_rotary_emb
 
         x = torch.randn(2, 10, 64)  # Wrong shape (3D instead of 4D)
         cos = torch.randn(1, 10, 1, 32)
         sin = torch.randn(1, 10, 1, 32)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError, match="Expected 4D tensor, got 3D"):
             apply_rotary_emb(x, cos, sin)
 
 
@@ -174,10 +187,11 @@ class TestCausalSelfAttention:
         from train import CausalSelfAttention, GPTConfig
 
         config = GPTConfig(n_embd=128, n_head=4, n_kv_head=4, sequence_len=32)
-        attn = CausalSelfAttention(config, layer_idx=1)  # No VE for layer 1
+        attn = CausalSelfAttention(config, layer_idx=0)  # No VE for layer 0
         x = torch.randn(2, 10, 128)
-        cos = torch.randn(1, 10, 1, 32)
-        sin = torch.randn(1, 10, 1, 32)
+        # head_dim = 128 / 4 = 32; rotary tables cover half of it
+        cos = torch.randn(1, 10, 1, 16)
+        sin = torch.randn(1, 10, 1, 16)
         window_size = (32, 0)
 
         result = attn(x, None, (cos, sin), window_size)
@@ -188,11 +202,11 @@ class TestCausalSelfAttention:
         from train import CausalSelfAttention, GPTConfig
 
         config = GPTConfig(n_embd=128, n_head=4, n_kv_head=4, sequence_len=32)
-        attn = CausalSelfAttention(config, layer_idx=0)  # Has VE for layer 0
+        attn = CausalSelfAttention(config, layer_idx=1)  # Has VE for layer 1
         x = torch.randn(2, 10, 128)
         ve = torch.randn(2, 10, 128)
-        cos = torch.randn(1, 10, 1, 32)
-        sin = torch.randn(1, 10, 1, 32)
+        cos = torch.randn(1, 10, 1, 16)
+        sin = torch.randn(1, 10, 1, 16)
         window_size = (32, 0)
 
         result = attn(x, ve, (cos, sin), window_size)
@@ -208,12 +222,8 @@ class TestBlock:
 
         config = GPTConfig(n_embd=128, n_head=4, n_kv_head=4)
         block = Block(config, layer_idx=0)
-        assert isinstance(  # nosec: B101 - Test assertion
-            block.attn, type(config).__bases__[0].__bases__[0]
-        )  # nn.Module
-        assert isinstance(  # nosec: B101 - Test assertion
-            block.mlp, type(config).__bases__[0].__bases__[0]
-        )  # nn.Module
+        assert isinstance(block.attn, torch.nn.Module)  # nosec: B101
+        assert isinstance(block.mlp, torch.nn.Module)  # nosec: B101
 
     def test_block_forward(self):
         """Test Block forward pass."""
@@ -222,8 +232,8 @@ class TestBlock:
         config = GPTConfig(n_embd=128, n_head=4, n_kv_head=4, sequence_len=32)
         block = Block(config, layer_idx=0)
         x = torch.randn(2, 10, 128)
-        cos = torch.randn(1, 10, 1, 32)
-        sin = torch.randn(1, 10, 1, 32)
+        cos = torch.randn(1, 10, 1, 16)
+        sin = torch.randn(1, 10, 1, 16)
         window_size = (32, 0)
 
         result = block(x, None, (cos, sin), window_size)
@@ -666,7 +676,7 @@ class TestBuildModelConfig:
     @patch("train.HEAD_DIM", 128)
     @patch("train.WINDOW_PATTERN", "SSSL")
     @patch("train.MAX_SEQ_LEN", 2048)
-    @patch("train.vocab_size", 1000)
+    @patch("train.vocab_size", 1000, create=True)
     def test_build_model_config(self):
         """Test model config building."""
         from train import build_model_config
@@ -684,7 +694,7 @@ class TestBuildModelConfig:
     @patch("train.HEAD_DIM", 128)
     @patch("train.WINDOW_PATTERN", "LLLL")
     @patch("train.MAX_SEQ_LEN", 2048)
-    @patch("train.vocab_size", 1000)
+    @patch("train.vocab_size", 1000, create=True)
     def test_build_model_config_different_depth(self):
         """Test model config with different depth."""
         from train import build_model_config

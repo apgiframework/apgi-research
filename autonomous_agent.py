@@ -1793,6 +1793,13 @@ class AutonomousAgent:
             with open(run_file, "r") as f:
                 content = f.read()
 
+            # Commented-out assignments are not current values
+            content = "\n".join(
+                line
+                for line in content.splitlines()
+                if not line.lstrip().startswith("#")
+            )
+
             parameters: Dict[str, Any] = {}
 
             # Common parameter patterns to extract

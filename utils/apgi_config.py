@@ -15,7 +15,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Optional, Type, TypeVar
 
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 # Try to import yaml for YAML loading support
 try:
@@ -67,6 +67,9 @@ class APGIExperimentConfigSchema(BaseModel):
         )
 
 
+_LOG_LEVELS = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET")
+
+
 class APGISecurityConfigSchema(BaseModel):
     """Security-related configuration schema."""
 
@@ -86,6 +89,14 @@ class APGIMetricsConfigSchema(BaseModel):
     log_level: str = Field(default="INFO")
     json_logging: bool = Field(default=True)
 
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, value: str) -> str:
+        """Only standard logging level names are accepted (any case)."""
+        if value.upper() not in _LOG_LEVELS:
+            raise ValueError(f"log_level must be one of: {', '.join(_LOG_LEVELS)}")
+        return value
+
 
 # ---------------------------------------------------------------------------
 # Config Manager Singleton
@@ -99,6 +110,10 @@ class ConfigSources:
     """Tracks the sources of configuration values for debugging."""
 
     sources: Dict[str, str]
+
+    def __post_init__(self) -> None:
+        # Own the mapping so callers cannot mutate it through a shared reference
+        self.sources = dict(self.sources)
 
 
 class ConfigManager:
@@ -616,7 +631,8 @@ def compute_config_checksum(config: Any, secret_key: Optional[str] = None) -> st
     if hasattr(config, "model_dump"):
         config_dict = config.model_dump()
     elif isinstance(config, dict):
-        config_dict = config
+        # Copy: the secret must not be written into the caller's config
+        config_dict = dict(config)
     else:
         config_dict = {"config": str(config)}
 

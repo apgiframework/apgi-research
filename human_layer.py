@@ -464,11 +464,12 @@ class HumanControlLayer:
                         comments = f"Manual rejection: {reason}"
                         break
                     elif choice == "4" or choice.lower() == "custom":
+                        # Enum values are lowercase; accept any case the user types
                         custom_decision = (
-                            input("Enter custom decision: ").strip().upper()
+                            input("Enter custom decision: ").strip().lower()
                         )
                         if custom_decision in [d.value for d in ReviewDecision]:
-                            final_decision = ReviewDecision(custom_decision.lower())
+                            final_decision = ReviewDecision(custom_decision)
                             comments = input(
                                 "Enter comments for custom decision: "
                             ).strip()
@@ -501,7 +502,11 @@ class HumanControlLayer:
         # Collect modifications if MODIFY decision
         modifications = None
         if final_decision == ReviewDecision.MODIFY:
-            if _is_tkinter_running():
+            if self.config.get("interaction_mode") == "autonomous":
+                # Autonomous mode must never block waiting for a human
+                modifications = ["Auto-generated modification (autonomous mode)"]
+                print("\nAutonomous mode: Using auto-generated modifications")
+            elif _is_tkinter_running():
                 # GUI mode - skip interactive modification input
                 modifications = ["Auto-generated modification (GUI mode)"]
                 print("\nGUI mode: Using auto-generated modifications")

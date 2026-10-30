@@ -7,6 +7,8 @@ all code paths without blanket module-level mocking.
 
 from __future__ import annotations
 
+import itertools
+import math
 import sys
 import tempfile
 from pathlib import Path
@@ -15,11 +17,21 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
+from tests._module_isolation import mocked_modules
+
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Pre-import required modules
-sys.modules["tqdm"] = MagicMock()
+
+@pytest.fixture(autouse=True)
+def _isolated_prepare_imports() -> Generator[None, None, None]:
+    """Mock tqdm and give each test a fresh ``prepare`` import.
+
+    Tests here re-import ``prepare`` and replace modules in ``sys.modules``;
+    scoping that to each test keeps it from leaking into other files.
+    """
+    with mocked_modules({"tqdm": MagicMock()}, fresh=["prepare"]):
+        yield
 
 
 @pytest.fixture
@@ -63,8 +75,13 @@ def mock_pyarrow() -> Generator[MagicMock, None, None]:
     mock_pf.read_row_group.return_value = mock_rg
     mock_pq.ParquetFile.return_value = mock_pf
 
+    # ``import pyarrow.parquet as pq`` binds the ``parquet`` attribute of the
+    # ``pyarrow`` module object, so the package mock must expose the same mock.
+    mock_pyarrow_pkg = MagicMock()
+    mock_pyarrow_pkg.parquet = mock_pq
+
     with patch.dict(
-        "sys.modules", {"pyarrow": MagicMock(), "pyarrow.parquet": mock_pq}
+        "sys.modules", {"pyarrow": mock_pyarrow_pkg, "pyarrow.parquet": mock_pq}
     ):
         yield mock_pq
 
@@ -282,13 +299,15 @@ class TestDownloadData:
     def test_all_shards_exist(self, temp_cache_dir: Path) -> None:
         """Test when all shards already exist."""
         with patch("prepare.DATA_DIR", temp_cache_dir):
-            # Create existing shards
+            from prepare import VAL_FILENAME, download_data
+
+            # Create existing shards, including the pinned validation shard
             for i in range(3):
                 shard = temp_cache_dir / f"shard_{i:05d}.parquet"
                 shard.touch()
+            (temp_cache_dir / VAL_FILENAME).touch()
 
             with patch("builtins.print"):
-                from prepare import download_data
 
                 # Should complete without downloading
                 download_data(3, 8)
@@ -394,13 +413,13 @@ class TestTrainTokenizer:
         (tokenizer_dir / "tokenizer.pkl").touch()
         (tokenizer_dir / "token_bytes.pt").touch()
 
-        with patch("prepare.DATA_DIR", temp_cache_dir):
-            with patch("prepare.TOKENIZER_DIR", tokenizer_dir):
-                from prepare import train_tokenizer
+        from prepare import train_tokenizer
 
-                result = train_tokenizer()
-                assert result is True  # nosec: B101 - Test assertion
-                mock_rustbpe.Trainer.assert_not_called()
+        # The defaults are bound at definition time, so patching the module
+        # constants would not affect them; pass the directories explicitly.
+        result = train_tokenizer(data_dir=temp_cache_dir, tokenizer_dir=tokenizer_dir)
+        assert result is True  # nosec: B101 - Test assertion
+        mock_rustbpe.Trainer.assert_not_called()
 
     def test_train_tokenizer_success(
         self, temp_cache_dir: Path, mock_rustbpe: MagicMock, mock_torch: MagicMock
@@ -579,17 +598,20 @@ class TestTokenizer:
 class TestGetTokenBytes:
     """Test get_token_bytes function."""
 
-    @patch("torch.load")
-    def test_get_token_bytes(self, mock_load: MagicMock, mock_torch: MagicMock) -> None:
+    def test_get_token_bytes(self, temp_cache_dir: Path, mock_torch: MagicMock) -> None:
         """Test getting token bytes."""
         mock_tensor = MagicMock()
-        mock_load.return_value = mock_tensor
+        mock_torch.load.return_value = mock_tensor
+        tokenizer_dir = temp_cache_dir / "tokenizer"
+        tokenizer_dir.mkdir(parents=True, exist_ok=True)
+        (tokenizer_dir / "token_bytes.pt").touch()
 
-        with patch("prepare.TOKENIZER_DIR", Path("/tmp/tokenizer")):
+        with patch("prepare.TOKENIZER_DIR", tokenizer_dir):
             from prepare import get_token_bytes
 
             result = get_token_bytes("cpu")
-            assert result is not None  # nosec: B101 - Test assertion
+            assert result is mock_tensor  # nosec: B101 - Test assertion
+            assert mock_torch.load.call_args.kwargs["map_location"] == "cpu"  # nosec
 
 
 # =============================================================================
@@ -653,7 +675,8 @@ class TestMakeDataloader:
         mock_tokenizer.get_bos_token_id.return_value = 0
         mock_tokenizer.encode.return_value = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
 
-        mock_batches.return_value = iter([(["text1"], 1)])
+        # The dataloader refills its buffer in a loop, so the source must not run dry
+        mock_batches.return_value = itertools.cycle([(["text1"], 1)])
 
         mock_tensor = MagicMock()
         mock_tensor.copy_ = MagicMock()
@@ -675,46 +698,36 @@ class TestMakeDataloader:
 class TestEvaluateBpb:
     """Test evaluate_bpb function."""
 
-    @patch("torch.no_grad")
-    @patch("prepare.get_token_bytes")
-    @patch("prepare.make_dataloader")
-    def test_evaluate_bpb(
-        self,
-        mock_loader: MagicMock,
-        mock_token_bytes: MagicMock,
-        mock_nograd: MagicMock,
-        mock_torch: MagicMock,
-        mock_rustbpe: MagicMock,
-    ) -> None:
-        """Test BPB evaluation."""
-        mock_nograd.return_value.__enter__ = MagicMock(return_value=None)
-        mock_nograd.return_value.__exit__ = MagicMock(return_value=None)
+    def test_evaluate_bpb(self) -> None:
+        """BPB is nats-per-byte over non-special tokens, converted to bits."""
+        import torch
 
-        # Mock token bytes
-        mock_bytes = MagicMock()
-        mock_bytes.__getitem__ = MagicMock(return_value=MagicMock())
-        mock_token_bytes.return_value = mock_bytes
+        # evaluate_bpb is decorated with @torch.no_grad() at import time, so it
+        # must be imported against the real torch, not the mock_torch fixture.
+        import prepare as real_prep
 
-        # Mock model
-        mock_model = MagicMock()
-        mock_loss = MagicMock()
-        mock_loss.view.return_value = mock_loss
-        mock_loss.__mul__ = MagicMock(return_value=mock_loss)
-        mock_loss.sum.return_value = MagicMock(item=MagicMock(return_value=100.0))
-        mock_model.return_value = mock_loss
+        batch_size, steps = 2, 2
+        # Token 0 is special (zero bytes); tokens 1-3 are one byte each
+        token_bytes = torch.tensor([0, 1, 1, 1])
+        x = torch.zeros(2, 2, dtype=torch.long)
+        y = torch.tensor([[1, 2], [3, 0]])
 
-        # Mock dataloader
-        mock_x = MagicMock()
-        mock_y = MagicMock()
-        mock_y.view.return_value = mock_y
-        mock_loader.return_value = iter([(mock_x, mock_y, 1), (mock_x, mock_y, 1)])
+        # Every token costs 1 nat; the special token is masked out of both sums
+        model = MagicMock(return_value=torch.ones(4))
 
-        mock_tokenizer = MagicMock()
+        with (
+            patch.object(real_prep, "get_token_bytes", return_value=token_bytes),
+            patch.object(
+                real_prep, "make_dataloader", return_value=iter([(x, y, 1)] * steps)
+            ),
+            patch.object(
+                real_prep, "EVAL_TOKENS", batch_size * real_prep.MAX_SEQ_LEN * steps
+            ),
+        ):
+            result = real_prep.evaluate_bpb(model, MagicMock(), batch_size, "cpu")
 
-        from prepare import evaluate_bpb
-
-        result = evaluate_bpb(mock_model, mock_tokenizer, 8, "cpu")
-        assert isinstance(result, float)  # nosec: B101 - Test assertion
+        # 3 counted tokens x 1 nat over 3 bytes per step -> 1 nat/byte -> 1/ln 2
+        assert result == pytest.approx(1 / math.log(2))  # nosec: B101 - Test assertion
 
 
 # =============================================================================

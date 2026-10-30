@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from human_layer import (
     HumanControlLayer,
     ReviewDecision,
@@ -17,6 +19,12 @@ from human_layer import (
     review,
     select_task,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolated_cwd(tmp_path, monkeypatch):
+    """Config, hypothesis board and selection log default to the cwd."""
+    monkeypatch.chdir(tmp_path)
 
 
 class TestTaskPriority:
@@ -291,12 +299,18 @@ class TestHumanControlLayer:
             result = layer.configure_if_needed()
             assert result is False  # nosec: B101 - Test assertion
 
-    def test_configure_if_needed_invalid_choice(self):
-        """Test configure_if_needed with invalid choice."""
-        layer = HumanControlLayer()
-        with patch("builtins.input", return_value="invalid"):
+    def test_configure_if_needed_invalid_choice(self, tmp_path):
+        """An invalid mode choice is rejected and re-prompted, not accepted."""
+        layer = HumanControlLayer(config_path=str(tmp_path / "human_config.json"))
+        # The wizard re-prompts until it gets a valid choice, so a constant
+        # invalid answer would loop forever; cancel after one rejection.
+        with patch(
+            "builtins.input", side_effect=["invalid", KeyboardInterrupt()]
+        ) as mock_input:
             result = layer.configure_if_needed()
             assert result is False  # nosec: B101 - Test assertion
+            assert mock_input.call_count == 2  # nosec: B101 - Test assertion
+            assert not layer.config.get("configured")  # nosec: B101
 
     def test_configure_if_needed_invalid_threshold(self):
         """Test configure_if_needed with invalid threshold."""
@@ -443,8 +457,15 @@ class TestHumanControlLayer:
         layer.config["interaction_mode"] = "autonomous"
         layer.config["review_threshold"] = 0.7
 
+        # Approval needs high confidence AND the hypothesis's criteria to be met
+        hypothesis = layer.approval_board.create_hypothesis(
+            title="Accuracy",
+            description="Accuracy is high",
+            success_criteria=["accuracy"],
+        )
         result_data = {
             "experiment_id": "exp1",
+            "hypothesis_id": hypothesis.id,
             "metrics": {"accuracy": 0.9},
             "outcomes": {"success": True},
             "analysis": "Good results",
@@ -461,13 +482,42 @@ class TestHumanControlLayer:
             review_result.reviewer == "autonomous_agent"
         )  # nosec: B101 - Test assertion
 
+    def test_review_autonomous_mode_never_prompts(self):
+        """Autonomous mode must not block on stdin, even when asking for changes."""
+        layer = HumanControlLayer()
+        layer.config["interaction_mode"] = "autonomous"
+        layer.config["review_threshold"] = 0.7
+
+        # High confidence but no hypothesis/criteria met -> recommends MODIFY
+        result_data = {
+            "experiment_id": "exp1",
+            "metrics": {"accuracy": 0.9},
+            "confidence": 0.8,
+        }
+
+        with patch("builtins.input", side_effect=AssertionError("prompted")):
+            with patch("builtins.print"):
+                review_result = layer.review(result_data)
+
+        assert review_result.decision == ReviewDecision.MODIFY  # nosec: B101
+        assert review_result.reviewer == "autonomous_agent"  # nosec: B101
+        assert review_result.modifications == [  # nosec: B101 - Test assertion
+            "Auto-generated modification (autonomous mode)"
+        ]
+
     def test_review_gui_mode(self):
         """Test review in GUI mode (auto-approve)."""
         layer = HumanControlLayer()
         layer.config["review_threshold"] = 0.7
 
+        hypothesis = layer.approval_board.create_hypothesis(
+            title="Accuracy",
+            description="Accuracy is high",
+            success_criteria=["accuracy"],
+        )
         result_data = {
             "experiment_id": "exp1",
+            "hypothesis_id": hypothesis.id,
             "metrics": {"accuracy": 0.9},
             "outcomes": {"success": True},
             "analysis": "Good results",
@@ -573,7 +623,8 @@ class TestHumanControlLayer:
             "confidence": 0.8,
         }
 
-        with patch("builtins.input", side_effect=["4", "MODIFY", "Custom comment"]):
+        # The trailing "" ends the "modification requests" prompt that MODIFY opens
+        with patch("builtins.input", side_effect=["4", "MODIFY", "Custom comment", ""]):
             with patch("builtins.print"):
                 review_result = layer.review(result_data)
 

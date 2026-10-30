@@ -81,7 +81,8 @@ class TestConfigManagerUtilityFunctions:
 
         try:
             result = config._load_yaml_safe(temp_path)
-            assert result is None  # nosec: B101 - Test assertion
+            # "Safe" loaders report a failure as an empty config, never raise
+            assert result == {}  # nosec: B101 - Test assertion
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -100,7 +101,7 @@ class TestConfigManagerUtilityFunctions:
                 ):
                     result = config._load_yaml_safe(temp_path)
                     # Should fall back to JSON parsing which fails for YAML content
-                    assert result is None  # nosec: B101 - Test assertion
+                    assert result == {}  # nosec: B101 - Test assertion
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -129,7 +130,7 @@ class TestConfigManagerUtilityFunctions:
 
         try:
             result = config._load_json_safe(temp_path)
-            assert result is None  # nosec: B101 - Test assertion
+            assert result == {}  # nosec: B101 - Test assertion
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -137,7 +138,7 @@ class TestConfigManagerUtilityFunctions:
         """Test _load_json_safe when file doesn't exist."""
         config = ConfigManager()
         result = config._load_json_safe(Path("/nonexistent/file.json"))
-        assert result is None  # nosec: B101 - Test assertion
+        assert result == {}  # nosec: B101 - Test assertion
 
     def test_load_env_file_valid(self):
         """Test _load_env_file with valid file."""
@@ -190,9 +191,9 @@ class TestConfigManagerUtilityFunctions:
             config._validate_file_path(Path("/nonexistent/file"))
 
     def test_validate_file_path_empty(self):
-        """Test _validate_file_path with empty path."""
+        """An empty path means the current directory, which is not a file."""
         config = ConfigManager()
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(ValueError, match="not a file"):
             config._validate_file_path(Path(""))
 
 

@@ -91,11 +91,11 @@ class TestPerformanceMetrics:
 class TestPerformanceMonitorBackgroundMonitoring:
     """Test background monitoring functionality."""
 
-    @patch("performance_monitoring.psutil.Process")
-    @patch("performance_monitoring.psutil.cpu_percent")
-    @patch("performance_monitoring.psutil.cpu_count")
-    @patch("performance_monitoring.psutil.cpu_freq")
-    @patch("performance_monitoring.psutil.virtual_memory")
+    @patch("utils.performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.cpu_percent")
+    @patch("utils.performance_monitoring.psutil.cpu_count")
+    @patch("utils.performance_monitoring.psutil.cpu_freq")
+    @patch("utils.performance_monitoring.psutil.virtual_memory")
     def test_start_monitoring(
         self, mock_vm, mock_freq, mock_count, mock_cpu_percent, mock_process
     ):
@@ -131,7 +131,7 @@ class TestPerformanceMonitorBackgroundMonitoring:
         # Should not raise
         monitor.stop_monitoring()
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_monitoring_error_handling(self, mock_process):
         """Test error handling in monitoring loop."""
         mock_process.side_effect = Exception("Process error")
@@ -147,11 +147,11 @@ class TestPerformanceMonitorBackgroundMonitoring:
 class TestPerformanceMonitorThresholds:
     """Test threshold checking functionality."""
 
-    @patch("performance_monitoring.psutil.Process")
-    @patch("performance_monitoring.psutil.cpu_percent")
-    @patch("performance_monitoring.psutil.cpu_count")
-    @patch("performance_monitoring.psutil.cpu_freq")
-    @patch("performance_monitoring.psutil.virtual_memory")
+    @patch("utils.performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.cpu_percent")
+    @patch("utils.performance_monitoring.psutil.cpu_count")
+    @patch("utils.performance_monitoring.psutil.cpu_freq")
+    @patch("utils.performance_monitoring.psutil.virtual_memory")
     def test_memory_threshold_violation(
         self, mock_vm, mock_freq, mock_count, mock_cpu_percent, mock_process
     ):
@@ -187,11 +187,11 @@ class TestPerformanceMonitorThresholds:
         # Should have detected threshold violation
         assert len(callback_calls) > 0  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil.Process")
-    @patch("performance_monitoring.psutil.cpu_percent")
-    @patch("performance_monitoring.psutil.cpu_count")
-    @patch("performance_monitoring.psutil.cpu_freq")
-    @patch("performance_monitoring.psutil.virtual_memory")
+    @patch("utils.performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.cpu_percent")
+    @patch("utils.performance_monitoring.psutil.cpu_count")
+    @patch("utils.performance_monitoring.psutil.cpu_freq")
+    @patch("utils.performance_monitoring.psutil.virtual_memory")
     def test_cpu_threshold_violation(
         self, mock_vm, mock_freq, mock_count, mock_cpu_percent, mock_process
     ):
@@ -226,7 +226,7 @@ class TestPerformanceMonitorThresholds:
         # Should have detected threshold violation
         assert len(callback_calls) > 0  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_memory_leak_detection(self, mock_process):
         """Test memory leak detection."""
         # Simulate growing memory
@@ -290,11 +290,11 @@ class TestPerformanceMonitorThresholds:
 class TestPerformanceMonitorOperations:
     """Test operation monitoring."""
 
-    @patch("performance_monitoring.psutil.Process")
-    @patch("performance_monitoring.psutil.cpu_percent")
-    @patch("performance_monitoring.psutil.cpu_count")
-    @patch("performance_monitoring.psutil.cpu_freq")
-    @patch("performance_monitoring.psutil.virtual_memory")
+    @patch("utils.performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.cpu_percent")
+    @patch("utils.performance_monitoring.psutil.cpu_count")
+    @patch("utils.performance_monitoring.psutil.cpu_freq")
+    @patch("utils.performance_monitoring.psutil.virtual_memory")
     def test_start_and_end_operation(
         self, mock_vm, mock_freq, mock_count, mock_cpu_percent, mock_process
     ):
@@ -331,7 +331,7 @@ class TestPerformanceMonitorOperations:
         assert metrics.cpu_after is not None  # nosec: B101 - Test assertion
         assert metrics.success is True  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_end_operation_with_error(self, mock_process):
         """Test ending operation with error."""
         mock_process_instance = MagicMock()
@@ -354,7 +354,7 @@ class TestPerformanceMonitorOperations:
 class TestPerformanceSummary:
     """Test performance summary functionality."""
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_get_performance_summary(self, mock_process):
         """Test getting performance summary."""
         mock_process_instance = MagicMock()
@@ -379,7 +379,7 @@ class TestPerformanceSummary:
         assert "total_operations" in summary  # nosec: B101 - Test assertion
         assert summary["total_operations"] == 2  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_get_performance_summary_by_name(self, mock_process):
         """Test getting performance summary filtered by operation name."""
         mock_process_instance = MagicMock()
@@ -497,7 +497,7 @@ class TestTrendAnalysis:
 class TestPerformanceRegression:
     """Test performance regression detection."""
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_detect_performance_regression_no_data(self, mock_process):
         """Test regression detection with insufficient data."""
         mock_process_instance = MagicMock()
@@ -512,7 +512,7 @@ class TestPerformanceRegression:
         result = monitor.detect_performance_regression()
         assert result["status"] == "insufficient_data"  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_detect_performance_regression_significant(self, mock_process):
         """Test detecting significant regression."""
         mock_process_instance = MagicMock()
@@ -676,9 +676,10 @@ class TestBenchmarkEdgeCases:
         def failing_func():
             raise ValueError("Test error")
 
-        # Should handle gracefully
-        result = benchmark(failing_func, iterations=1)
-        assert result is not None  # nosec: B101 - Test assertion
+        # Timing a function that fails is meaningless, so the error propagates
+        # (PerformanceMonitor.benchmark, by contrast, keeps going).
+        with pytest.raises(ValueError, match="Test error"):
+            benchmark(failing_func, iterations=1)
 
 
 class TestPerformanceContext:
@@ -711,7 +712,7 @@ class TestCreatePerformanceMonitor:
 class TestMonitorFunctionPerformance:
     """Test monitor_function_performance decorator."""
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_monitor_function_success(self, mock_process):
         """Test monitoring a successful function."""
         mock_process_instance = MagicMock()
@@ -730,7 +731,7 @@ class TestMonitorFunctionPerformance:
         result = test_func()
         assert result == 42  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_monitor_function_exception(self, mock_process):
         """Test monitoring a function that raises exception."""
         mock_process_instance = MagicMock()
@@ -770,7 +771,7 @@ class TestBenchmarkDecorator:
 class TestMemoryUsageError:
     """Test get_memory_usage error handling."""
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_get_memory_usage_error(self, mock_process):
         """Test get_memory_usage when psutil raises error."""
         mock_process.side_effect = Exception("Process error")
@@ -782,7 +783,7 @@ class TestMemoryUsageError:
 class TestRegressionEdgeCases:
     """Test regression detection edge cases."""
 
-    @patch("performance_monitoring.psutil.Process")
+    @patch("utils.performance_monitoring.psutil.Process")
     def test_regression_no_successful_operations(self, mock_process):
         """Test regression detection with no successful operations."""
         mock_process_instance = MagicMock()

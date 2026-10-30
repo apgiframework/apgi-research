@@ -204,7 +204,15 @@ class TestPrepareGoNoGo:
     def test_constants_values(self):
         """Test constant values."""
         assert prepare_go_no_go.TIME_BUDGET == 600  # nosec: B101 - Test assertion
-        assert prepare_go_no_go.NUM_TRIALS == 120  # nosec: B101 - Test assertion
+        # NUM_TRIALS is tuned by the XPR AUTO optimiser, so assert what must
+        # hold (a positive count that the experiment uses by default) rather
+        # than a value that goes stale on every parameter update.
+        assert isinstance(prepare_go_no_go.NUM_TRIALS, int)  # nosec: B101
+        assert prepare_go_no_go.NUM_TRIALS > 0  # nosec: B101 - Test assertion
+        assert (  # nosec: B101 - Test assertion
+            prepare_go_no_go.GoNoGoExperiment().num_trials
+            == prepare_go_no_go.NUM_TRIALS
+        )
         assert prepare_go_no_go.APGI_ENABLED is True  # nosec: B101 - Test assertion
 
 
@@ -226,7 +234,13 @@ class TestPrepareStroopEffect:
     def test_constants_values(self):
         """Test constant values."""
         assert prepare_stroop_effect.TIME_BUDGET == 600  # nosec: B101 - Test assertion
-        assert prepare_stroop_effect.NUM_TRIALS == 150  # nosec: B101 - Test assertion
+        # NUM_TRIALS is tuned by the XPR AUTO optimiser; see the Go/No-Go test.
+        assert isinstance(prepare_stroop_effect.NUM_TRIALS, int)  # nosec: B101
+        assert prepare_stroop_effect.NUM_TRIALS > 0  # nosec: B101 - Test assertion
+        assert (  # nosec: B101 - Test assertion
+            prepare_stroop_effect.StroopExperiment().num_trials
+            == prepare_stroop_effect.NUM_TRIALS
+        )
         assert (
             prepare_stroop_effect.APGI_ENABLED is True
         )  # nosec: B101 - Test assertion

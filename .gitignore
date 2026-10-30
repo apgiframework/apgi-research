@@ -72,3 +72,5 @@ xpr_memory.json
 # Coverage output
 .coverage
 coverage.xml
+gate-coverage.xml
+gate-tests.xml
