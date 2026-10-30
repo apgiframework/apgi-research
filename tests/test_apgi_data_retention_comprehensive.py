@@ -954,11 +954,9 @@ class TestRetentionIntegration:
         old_created_at = datetime.now(timezone.utc) - timedelta(days=400)
         subject2.created_at = old_created_at
 
-        # Mock deletion executor
-        mock_executor = Mock()
-        mock_executor.delete_experiment_data.return_value = True
-        mock_executor.delete_config_data.return_value = True
-        self.scheduler.deletion_executor = mock_executor
+        # Real executor, with only the audit sink replaced so events are observable
+        audit_sink = Mock()
+        self.scheduler.deletion_executor.audit_sink = audit_sink
 
         # Execute retention jobs
         results = self.scheduler.execute_retention_jobs()
@@ -970,10 +968,13 @@ class TestRetentionIntegration:
         )  # subject2 should be expired  # nosec: B101 - Test assertion
         assert results["deletions_completed"] == 1  # nosec: B101 - Test assertion
 
-        # Verify audit trail
+        # Only the expired subject is deleted, and that deletion is audited
+        audit_calls = audit_sink.record_event.call_args_list
+        assert len(audit_calls) == 1  # nosec: B101 - Test assertion
         assert (
-            len(mock_executor.audit_sink.record_event.call_args_list) == 2
+            audit_calls[0].kwargs["resource_id"] == "experiment_user_002"
         )  # nosec: B101 - Test assertion
+        assert audit_calls[0].kwargs["status"] == "success"  # nosec: B101
 
     def test_compliance_workflow_with_audit(self):
         """Test compliance workflow with complete audit trail."""
@@ -988,7 +989,7 @@ class TestRetentionIntegration:
         self.scheduler.register_data_subject(
             subject_id="ccpa_user",
             subject_name="CCPA User",
-            data_categories=["marketing_data"],
+            data_categories=["experiment"],
             retention_policy=RetentionPolicy.CCPA_DEFAULT,
         )
 
@@ -1003,32 +1004,31 @@ class TestRetentionIntegration:
         deletion_requested = self.scheduler.request_deletion("ccpa_user")
         assert deletion_requested is True  # nosec: B101 - Test assertion
 
-        # Mock deletion executor
-        mock_executor = Mock()
-        mock_executor.delete_experiment_data.return_value = True
-        mock_executor.delete_config_data.return_value = True
-        self.scheduler.deletion_executor = mock_executor
+        # Real executor, with only the audit sink replaced so events are observable
+        audit_sink = Mock()
+        self.scheduler.deletion_executor.audit_sink = audit_sink
 
         # Execute retention jobs
         self.scheduler.execute_retention_jobs()
 
-        # Verify CCPA user deletion was processed
-        ccca_results = [
-            r
-            for r in mock_executor.audit_sink.record_event.call_args_list
-            if r[1]["resource_id"] == "ccpa_user"
+        # Verify CCPA user deletion was processed and audited exactly once
+        ccpa_results = [
+            call
+            for call in audit_sink.record_event.call_args_list
+            if call.kwargs["resource_id"] == "experiment_ccpa_user"
         ]
-        assert len(ccca_results) == 1  # nosec: B101 - Test assertion
+        assert len(ccpa_results) == 1  # nosec: B101 - Test assertion
 
     def test_error_handling_and_recovery(self):
         """Test error handling and recovery mechanisms."""
-        # Create subject
-        self.scheduler.register_data_subject(
+        # Create an expired subject so retention jobs attempt its deletion
+        subject = self.scheduler.register_data_subject(
             subject_id="error_test",
             subject_name="Error Test",
             data_categories=["experiment"],
             retention_policy=RetentionPolicy.GDPR_DEFAULT,
         )
+        subject.created_at = datetime.now(timezone.utc) - timedelta(days=400)
 
         # Mock deletion executor that fails initially
         mock_executor = Mock()

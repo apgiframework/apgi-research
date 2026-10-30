@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import prepare
 from prepare import (
     EVAL_TOKENS,
     MAX_SEQ_LEN,
@@ -107,18 +108,20 @@ class TestDataPreparation:
     def test_integration(self):
         """Test complete data preparation workflow."""
         with (
-            patch("prepare.download_data") as mock_download,
-            patch("prepare.make_dataloader") as mock_dataloader,
+            patch.object(prepare, "download_data") as mock_download,
+            patch.object(
+                prepare, "list_parquet_files", return_value=[Path("shard.parquet")]
+            ),
+            patch.object(
+                prepare, "train_tokenizer", return_value=True
+            ) as mock_tokenizer,
         ):
-
-            mock_download.return_value = None
-            mock_dataloader.return_value = MagicMock()
-
-            # prepare_data function not available - skip test(data_dir="test_data", num_shards=3, batch_size=16)
+            exit_code = prepare.main(["--num-shards", "3"])
 
             # Verify workflow steps
-            mock_download.assert_called_once_with(3)
-            mock_dataloader.assert_called_once()
+            assert exit_code == 0  # nosec: B101 - Test assertion
+            mock_download.assert_called_once_with(3, 8)
+            mock_tokenizer.assert_called_once()
 
     def test_with_custom_params(self):
         """Test data preparation with custom parameters."""
@@ -305,30 +308,21 @@ class TestIntegration:
 
     def test_full_preparation_workflow(self):
         """Test complete data preparation workflow."""
-        with NamedTemporaryFile() as temp_dir:
-            temp_path = Path(temp_dir.name)
+        with (
+            patch.object(prepare, "download_data") as mock_download,
+            patch.object(
+                prepare, "list_parquet_files", return_value=[Path("shard.parquet")]
+            ),
+            patch.object(
+                prepare, "train_tokenizer", return_value=True
+            ) as mock_tokenizer,
+        ):
+            exit_code = prepare.main(["--num-shards", "2", "--download-workers", "2"])
 
-            # Mock all external dependencies
-            with (
-                patch("prepare.download_data") as mock_download,
-                patch("prepare.make_dataloader") as mock_dataloader,
-                patch("torch.save"),
-                patch("os.makedirs") as mock_makedirs,
-            ):
-
-                # Execute full workflow
-                # prepare_data function not available - skip test
-                # prepare_data(
-                #     data_dir=str(temp_path), num_shards=2, batch_size=32, seq_len=256
-                # )
-
-                # Verify all steps were called
-                mock_download.assert_called_once_with(2)
-                mock_dataloader.assert_called_once()
-                mock_makedirs.assert_called()
-
-                # Verify result is successful
-                assert temp_path.exists()  # nosec: B101 - Test assertion
+            # Verify all steps were called
+            assert exit_code == 0  # nosec: B101 - Test assertion
+            mock_download.assert_called_once_with(2, 2)
+            mock_tokenizer.assert_called_once()
 
     def test_preparation_with_tokenizer(self):
         """Test data preparation with custom tokenizer."""
@@ -355,35 +349,53 @@ class TestIntegration:
 
     def test_error_recovery_workflow(self):
         """Test error recovery in data preparation."""
-        with patch("prepare.download_data") as mock_download:
+        with (
+            patch.object(prepare, "download_data") as mock_download,
+            patch.object(
+                prepare, "list_parquet_files", return_value=[Path("shard.parquet")]
+            ),
+            patch.object(prepare, "train_tokenizer", return_value=True),
+        ):
 
-            # First call fails
+            # First run fails on a network error and reports failure
             mock_download.side_effect = Exception("Network error")
+            assert prepare.main(["--num-shards", "1"]) == 1  # nosec: B101
 
-            try:
-                download_data(num_shards=1)
-            except Exception as e:
-                # Verify error was caught
-                assert "Network error" in str(e)  # nosec: B101 - Test assertion
+            # Retry succeeds once the network recovers
+            mock_download.side_effect = None
+            assert prepare.main(["--num-shards", "1"]) == 0  # nosec: B101
 
-                # Retry should succeed
-                mock_download.side_effect = None
-                download_data(num_shards=1)
-
-                # Verify retry succeeded
-                assert mock_download.call_count == 2  # nosec: B101 - Test assertion
+            assert mock_download.call_count == 2  # nosec: B101 - Test assertion
 
     def test_concurrent_preparation(self):
         """Test concurrent data preparation."""
-        with patch("prepare.download_data") as mock_download:
+        import threading
 
-            # Multiple concurrent calls should be handled
-            download_data(num_shards=1)
-            download_data(num_shards=1)
-            download_data(num_shards=1)
+        exit_codes = []
 
-            # Should handle concurrent access gracefully
-            assert mock_download.call_count >= 1  # nosec: B101 - Test assertion
+        with (
+            patch.object(prepare, "download_data") as mock_download,
+            patch.object(
+                prepare, "list_parquet_files", return_value=[Path("shard.parquet")]
+            ),
+            patch.object(prepare, "train_tokenizer", return_value=True),
+        ):
+            threads = [
+                threading.Thread(
+                    target=lambda: exit_codes.append(
+                        prepare.main(["--num-shards", "1"])
+                    )
+                )
+                for _ in range(3)
+            ]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+            # Every concurrent run completes successfully
+            assert exit_codes == [0, 0, 0]  # nosec: B101 - Test assertion
+            assert mock_download.call_count == 3  # nosec: B101 - Test assertion
 
 
 class TestPerformanceAndScalability:

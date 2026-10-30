@@ -761,7 +761,7 @@ class TestComplianceIntegration:
 
     def test_multiple_retention_cycles(self):
         """Test multiple retention enforcement cycles."""
-        # Create records that will expire in different cycles
+        # RESTRICTED data is retained for 30 days
         current_time = datetime.now()
         records = [
             {
@@ -774,26 +774,32 @@ class TestComplianceIntegration:
         ]
 
         with patch.object(self.manager, "_execute_deletion") as mock_delete:
-            # First enforcement - should delete records older than 30 days
+            # First cycle: everything older than 30 days is deleted
             result1 = self.manager.enforce_retention(records)
-            assert (
-                len(result1) == 2
-            )  # Records 1 and 2 should remain  # nosec: B101 - Test assertion
+            assert [r["id"] for r in result1] == [
+                "record_1"
+            ]  # nosec: B101 - Test assertion
+            assert mock_delete.call_count == 4  # nosec: B101 - Test assertion
 
-            # Second enforcement - should delete records older than 50 days
+            # Second cycle with no time passing is idempotent
             result2 = self.manager.enforce_retention(result1)
-            assert (
-                len(result2) == 1
-            )  # Only record 1 should remain  # nosec: B101 - Test assertion
+            assert [r["id"] for r in result2] == [
+                "record_1"
+            ]  # nosec: B101 - Test assertion
+            assert mock_delete.call_count == 4  # nosec: B101 - Test assertion
 
-            # Third enforcement - should delete all records
-            result3 = self.manager.enforce_retention(result2)
-            assert (
-                len(result3) == 0
-            )  # All records expired  # nosec: B101 - Test assertion
+            # Third cycle after the survivor has aged past 30 days
+            aged = [
+                {
+                    **result2[0],
+                    "created_at": (current_time - timedelta(days=31)).isoformat(),
+                }
+            ]
+            result3 = self.manager.enforce_retention(aged)
+            assert result3 == []  # nosec: B101 - Test assertion
 
-            # Total deletions should equal number of records
-            assert mock_delete.call_count == 7  # nosec: B101 - Test assertion
+            # Every record is eventually deleted exactly once
+            assert mock_delete.call_count == 5  # nosec: B101 - Test assertion
 
     def test_compliance_with_large_dataset(self):
         """Test compliance operations with large datasets."""

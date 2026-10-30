@@ -77,7 +77,15 @@ def mock_gui_dependencies():
     mock_ctk = MockCustomTkinter()
     sys.modules["customtkinter"] = mock_ctk  # type: ignore[assignment]
 
+    # The GUI module was imported (and bound its own ``ctk``) at collection
+    # time, so swap the name it uses as well; otherwise methods exercised with
+    # a mock ``self`` would build real windows, which hang without a display.
+    original_gui_ctk = gui.ctk
+    gui.ctk = mock_ctk
+
     yield
+
+    gui.ctk = original_gui_ctk
 
     # Restore original modules
     if original_customtkinter:
