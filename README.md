@@ -1,6 +1,64 @@
 # APGI Research Platform
 
-An autonomous research system designed to optimize psychological experiments through AI-driven parameter tuning and continuous learning. The system implements a complete Autonomous Learning Algorithm (ALGORITH) with human-in-the-loop oversight and production-grade security, compliance, and observability.
+APGI Research is a Python desktop application and research toolkit for running psychological paradigm simulations, inspecting APGI dynamics, and improving experiment parameters with human oversight. It combines a CustomTkinter experiment dashboard, an autonomous optimization agent, hypothesis review, persistent memory, and security and observability modules.
+
+The repository contains 29 experiment runners covering 28 paradigms, including a second Change Blindness implementation with full APGI integration. Internal implementation checks and simulated results do not establish clinical validity or regulatory certification.
+
+## Application workflow
+
+1. Launch `python GUI_auto_improve_experiments.py` from the repository root.
+2. Select **RUN** on an experiment card, or **Run All** to execute the discovered runners sequentially. Follow status labels and the live console; use **Stop** to cancel running processes.
+3. Select **VIZ** after a run to inspect its results and APGI metrics.
+4. Select **XPR AUTO** to configure an optimization run and review the proposed plan before execution. Monitor confidence, regression, escalation counts, and parameter changes in the sidebar.
+5. Create and review hypotheses, save result data, and export a research report from the menus.
+
+## Contents
+
+- [Desktop application features](#desktop-application-features)
+- [Architecture](#architecture)
+- [Protocol specification](#apgi-protocol-specification-110)
+- [Supported experiments](#supported-experiments)
+- [Usage](#usage)
+- [Additional research tools](#additional-research-tools)
+- [System configuration](#system-configuration)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+
+## Desktop application features
+
+### Experiment execution and management
+
+The dashboard discovers `experiments/run_*.py` files at startup and can reload the list during a session. Each card shows the experiment name, script path, execution status, and RUN, XPR AUTO, and VIZ controls. Individual runs execute in background subprocesses and stream output to the console. **Run All** queues experiments sequentially.
+
+The File and Edit menus support adding an experiment from a template or an existing Python script, opening the experiment directory, opening a script in an editor, deleting an experiment with confirmation, and clearing the current session. Available templates are **APGI Cognitive**, **Basic Experiment**, **Data Analysis**, and **Model Training**.
+
+### Optimization and human review
+
+XPR AUTO opens a pre-run configuration dialog for maximum iterations, time budget, minimum confidence, and protected-file patterns. Defaults are 3 iterations, 600 seconds, 0.5 minimum confidence, and `prepare_*.py` protection. A plan review step lets the researcher approve execution or modify the direction and request a new plan.
+
+The agent runs experiments, compares metrics, proposes parameter changes, and records outcomes through Git, checkpoints, and memory. The XPR Changes panel displays parameter modifications. The guardrail dashboard displays status, confidence, latest regression, and escalation count, with notifications when intervention is needed. Optimization can change runner files and create Git history; use a clean working tree before starting.
+
+### Hypothesis board
+
+Create a hypothesis with a title, description, predicted outcome, confidence score, risk level, and success criteria. The sidebar lists active hypotheses, while the review dialog provides approval and rejection controls. The underlying approval-board module stores hypotheses and review information for use by the human control layer.
+
+### Results and visualization
+
+Results parsed from experiment output feed embedded Matplotlib charts and separate visualization windows. Task-specific views are supplemented by reusable panels for core dynamics, measurement proxies, neuromodulators, domain metrics, hierarchical processing, state-space trajectories, and the precision–expectation gap. See [visualization helpers](visualization_helpers/README.md) for the plotting API.
+
+Save current results as JSON and export a Markdown research report containing experiment availability, run status, guardrail metrics, and pending hypotheses. The console can be cleared, copied to the clipboard, or saved as a log. Visualization windows can be opened together, reset, or closed from the View menu.
+
+### Monitoring, appearance, and support
+
+- View task progress and completion status in the progress dialog; the progress module also supports summaries and checkpoint persistence.
+- Search and refresh the JSONL audit trail in the audit-log viewer.
+- Switch appearance modes, show or hide the sidebar, expand the console, adjust zoom, and refresh the interface.
+- Check dependency status and invoke dependency repair from the application.
+- Open built-in getting-started instructions, experiment tutorials, XPR guidance, API documentation, templates, system information, and issue/feedback dialogs.
+
+### Current interface limitations
+
+The result-import dialog currently acknowledges a selected file without loading its data. Result saving writes JSON even if a CSV extension is selected; report export writes Markdown even if HTML or PDF is selected. Use `.json` and `.md` respectively. The Settings dialog saves values to `.apgi_settings.json`, but does not currently load or apply them to the runtime; its concurrency, autosave, and refresh controls should not be treated as active features. The additional-constraints text box in XPR configuration is displayed but is not copied into the submitted run configuration.
 
 ## Architecture
 
@@ -206,7 +264,7 @@ The APGI Research Application implements a comprehensive autonomous learning alg
 - **Infinite Autonomous Optimization**: Continuous parameter optimization with async git operations
 - **Comprehensive Guardrails**: Confidence thresholds, metric regression detection, safety violations
 - **Git-Based Learning**: Version control tracking with automatic rollback on failures
-- **Multi-Experiment Support**: 29+ psychological experiments with 100/100 APGI compliance
+- **Multi-Experiment Support**: 29 dynamically discovered runners covering 28 psychological paradigms
 - **LLM Integration**: Multi-provider support (OpenAI, Anthropic, local) via litellm
 - **Real-Time Monitoring**: GUI with live experiment execution and embedded matplotlib visualization
 - **Crash Recovery**: Checkpoint system for resuming after interruptions
@@ -241,7 +299,7 @@ internal implementation check, not a protocol verdict.
 
 ## Supported Experiments
 
-The application supports 29 psychological experiments, all achieving **100/100 APGI compliance**:
+The dashboard discovers 29 runners for the following 28 paradigms. Change Blindness has both standard and full-APGI runners. Metric names below describe task outcomes; consult each runner for its emitted result schema.
 
 | Category | Experiment | Primary Metric |
 | -------- | ---------- | ------------- |
@@ -299,8 +357,8 @@ export APGI_CONFIG_FILE="config/apgi.json"
 
 ```bash
 # Run experiment with standardized CLI
-python run_iowa_gambling_task.py --trials 100 --verbose
-python run_stroop_effect.py --operator user123 --role operator
+python -m experiments.run_iowa_gambling_task --trials 100 --verbose
+python -m experiments.run_stroop_effect --operator user123 --role operator
 
 # Run autonomous optimization
 python autonomous_agent.py --experiment masking --iterations 100
@@ -312,9 +370,9 @@ python autonomous_agent.py --overnight
 
 ```bash
 # Direct experiment execution (for backward compatibility)
-python run_attentional_blink.py
-python run_visual_search.py
-python run_change_blindness.py
+python -m experiments.run_attentional_blink
+python -m experiments.run_visual_search
+python -m experiments.run_change_blindness
 
 # Data preparation
 python prepare.py
@@ -329,8 +387,7 @@ python train.py
 # Launch the graphical interface
 python GUI_auto_improve_experiments.py
 
-# With debug mode
-python GUI_auto_improve_experiments.py --debug
+# The GUI starts directly; configure it through its menus.
 ```
 
 The GUI provides:
@@ -338,7 +395,7 @@ The GUI provides:
 - Real-time experiment execution with CustomTkinter interface
 - Guardrail dashboard with live metrics (confidence, regression, escalation count)
 - Hypothesis approval board integration
-- Sequential and parallel run modes
+- Individual background runs and a sequential Run All queue
 - Results visualization with embedded matplotlib
 - 1400×900 pixel default window, responsive layout
 
@@ -348,7 +405,7 @@ The GUI provides:
 
 ```python
 from autonomous_agent import AutonomousAgent
-from human_layer import HumanControlLayer, ReviewDecision
+from human_layer import HumanControlLayer
 from memory_store import MemoryStore
 from xpr_agent_engine import XPRAgentEngineEnhanced
 
@@ -372,13 +429,13 @@ result = agent.run_experiment(
     max_retries=1
 )
 
-# Review and update memory
-if review_result.decision == ReviewDecision.APPROVE:
+# Record a successful outcome for later searches
+if result.status == "success":
     memory.add_memory_with_embedding(
         experiment_name="masking",
         pattern_type="success_pattern",
-        content="BASE_DETECTION_RATE=0.5 improved performance by 15%",
-        context={"metric_delta": 0.15}
+        content="Completed masking run with BASE_DETECTION_RATE=0.5",
+        context={"primary_metric": str(result.primary_metric)}
     )
 ```
 
@@ -465,6 +522,21 @@ for trial_data in trials:
 results = kernel.finalize_run(run_context)
 ```
 
+## Additional research tools
+
+| Tool | Existing functionality |
+| ---- | ---------------------- |
+| `progress_tracking.py` | Task states, elapsed time, progress summaries, JSON export, checkpoint save/load, and restoration of task state. |
+| `validation.py` and `utils/apgi_validation.py` | Experiment and parameter validation; see the protocol section for registered-study checks. |
+| `analyze_experiments.py` | Analysis and report generation from a bundled results dictionary; this is a snapshot analysis, not an automatic reader of the latest GUI session. |
+| `prepare.py` | Download training-data shards, train a BPE tokenizer, and cache preparation artifacts in `~/.cache/autoresearch/`. Use `python prepare.py --num-shards 8` for a smaller preparation run. |
+| `train.py` | Single-device language-model pretraining and evaluation using the prepared data, with CUDA, Apple MPS, or CPU selection. This is separate from the psychological experiment simulations. |
+| `paper-miner.py` | Standalone literature-search GUI for PubMed, arXiv, bioRxiv, and OpenAlex; method/entity/effect-size extraction, editable search configuration, and CSV/JSON export. Requires the additional `arxiv` and `biopython` packages and a configured contact email for PubMed. Launch with `python paper-miner.py`. |
+
+For full workflows, see the [usage guide](docs/APGI-USAGE-GUIDE.md),
+[algorithm description](docs/ALGORITHM.md), [operational playbooks](docs/Operational-Playbooks.md),
+and [maturity matrix](docs/Maturity-Matrix.md).
+
 ## System Configuration
 
 ### Environment Variables
@@ -542,14 +614,14 @@ results = kernel.finalize_run(run_context)
 
 ### Testing
 
-The system includes 30+ comprehensive test files:
+The test suite covers experiment runners, agent behavior, infrastructure, and GUI helpers:
 
 ```bash
 # Run all tests
 pytest
 
 # Run with coverage
-pytest --cov=tests --cov-report=html
+pytest --cov=. --cov-report=html
 
 # Run specific component tests
 pytest tests/test_autonomous_agent.py
@@ -586,7 +658,7 @@ pytest tests/test_gui_playwright.py
 
 ```bash
 # Linting
-flake8 autonomous_agent.py GUI-auto_improve_experiments.py
+flake8 autonomous_agent.py GUI_auto_improve_experiments.py
 
 # Formatting
 black *.py
@@ -599,7 +671,7 @@ mypy autonomous_agent.py
 
 ```bash
 # Generate coverage report
-pytest --cov=tests --cov-report=html
+pytest --cov=. --cov-report=html
 ```
 
 ## Troubleshooting
@@ -634,10 +706,10 @@ pytest --cov=tests --cov-report=html
 
 ```bash
 # Enable debug logging
-python autonomous_agent.py --experiment masking --debug
+python autonomous_agent.py --experiment masking --iterations 1
 
-# GUI debug mode
-python GUI-auto_improve_experiments.py --debug
+# Open the GUI and inspect its live console
+python GUI_auto_improve_experiments.py
 ```
 
 ## Contributing
@@ -732,7 +804,7 @@ export APGI_PSEUDONYM_SALT="$(openssl rand -hex 16)"
 python GUI_auto_improve_experiments.py
 
 # Or use CLI
-python apgi_cli.py --help
+python -m experiments.run_stroop_effect --help
 ```
 
 ## Requirements

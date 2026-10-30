@@ -105,11 +105,20 @@ jobs:
       with:
         python-version: '3.12'
     - name: Install dependencies
-      run: pip install jsonschema pytest
+      run: python -m pip install -r requirements-ci-gates.txt
     - name: Run gate
       run: python scripts/ci_gates.py --gate ${{ matrix.gate }}
     - name: Gate mutation tests
-      run: pytest --noconftest tests/test_ci_gates.py -q -p no:cacheprovider
+      run: python -m pytest -c pytest-gates.ini --junitxml=gate-tests.xml
+    - name: Preserve gate test evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: research-gate-${{ matrix.gate }}
+        path: |
+          gate-tests.xml
+          gate-coverage.xml
+        if-no-files-found: error
 
   # ---------------------------------------------------------------------------
   # Performance Benchmark Gates
