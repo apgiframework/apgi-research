@@ -43,7 +43,7 @@ class TestPerformanceBenchmarks:
         """Benchmark prediction_error function performance."""
         from APGI_System import FoundationalEquations
 
-        with performance_monitor(threshold_ms=500) as metrics:
+        with performance_monitor(threshold_ms=500, track_memory=False) as metrics:
             for _ in range(100000):
                 FoundationalEquations.prediction_error(5.0, 3.0)
 
@@ -56,7 +56,7 @@ class TestPerformanceBenchmarks:
         """Benchmark z_score function performance."""
         from APGI_System import FoundationalEquations
 
-        with performance_monitor(threshold_ms=500) as metrics:
+        with performance_monitor(threshold_ms=500, track_memory=False) as metrics:
             for _ in range(100000):
                 FoundationalEquations.z_score(10.0, 5.0, 2.0)
 
@@ -69,7 +69,7 @@ class TestPerformanceBenchmarks:
         """Benchmark precision function performance."""
         from APGI_System import FoundationalEquations
 
-        with performance_monitor(threshold_ms=500) as metrics:
+        with performance_monitor(threshold_ms=500, track_memory=False) as metrics:
             for _ in range(100000):
                 FoundationalEquations.precision(4.0)
 
@@ -82,7 +82,7 @@ class TestPerformanceBenchmarks:
         """Benchmark accumulated_signal function performance."""
         from APGI_System import CoreIgnitionSystem
 
-        with performance_monitor(threshold_ms=1000) as metrics:
+        with performance_monitor(threshold_ms=1000, track_memory=False) as metrics:
             for _ in range(50000):
                 CoreIgnitionSystem.accumulated_signal(1.0, 2.0, 1.0, 2.0)
 
@@ -95,7 +95,7 @@ class TestPerformanceBenchmarks:
         """Benchmark ignition_probability function performance."""
         from APGI_System import CoreIgnitionSystem
 
-        with performance_monitor(threshold_ms=1500) as metrics:
+        with performance_monitor(threshold_ms=1500, track_memory=False) as metrics:
             for _ in range(100000):
                 CoreIgnitionSystem.ignition_probability(1.0, 0.5, 5.5)
 
@@ -108,7 +108,7 @@ class TestPerformanceBenchmarks:
         """Benchmark signal_dynamics function performance."""
         from APGI_System import DynamicalSystemEquations
 
-        with performance_monitor(threshold_ms=2000) as metrics:
+        with performance_monitor(threshold_ms=2000, track_memory=False) as metrics:
             for _ in range(10000):
                 DynamicalSystemEquations.signal_dynamics(
                     S=1.0,

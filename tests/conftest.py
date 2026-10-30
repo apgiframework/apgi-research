@@ -376,12 +376,18 @@ class PerformanceMetrics:
 @contextmanager
 def measure_performance(
     threshold_ms: Optional[float] = None,
+    track_memory: bool = True,
 ) -> Generator[PerformanceMetrics, None, None]:
-    """Context manager to measure performance metrics."""
+    """Context manager to measure performance metrics.
+
+    ``track_memory`` starts tracemalloc, which slows tight Python loops several
+    times over, so pure timing checks should pass ``track_memory=False``.
+    """
     metrics = PerformanceMetrics()
 
     # Start memory tracking
-    tracemalloc.start()
+    if track_memory:
+        tracemalloc.start()
     gc.collect()
     gc_before = gc.get_count()
     start_time = time.perf_counter()
@@ -393,9 +399,10 @@ def measure_performance(
         metrics.execution_time = (end_time - start_time) * 1000  # Convert to ms
 
         # Memory metrics
-        current, peak = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
-        metrics.peak_memory_mb = peak / 1024 / 1024
+        if track_memory:
+            current, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            metrics.peak_memory_mb = peak / 1024 / 1024
 
         # GC metrics
         gc_after = gc.get_count()

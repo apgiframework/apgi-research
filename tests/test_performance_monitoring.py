@@ -5,6 +5,8 @@ Comprehensive tests for performance_monitoring.py - Performance monitoring modul
 import time
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from utils.performance_monitoring import (
     BenchmarkConfig,
     BenchmarkResult,
@@ -97,7 +99,7 @@ class TestPerformanceReport:
 class TestGetMemoryUsage:
     """Tests for get_memory_usage function."""
 
-    @patch("performance_monitoring.psutil")
+    @patch("utils.performance_monitoring.psutil")
     def test_get_memory_success(self, mock_psutil):
         """Test getting memory usage successfully."""
         mock_process = MagicMock()
@@ -109,7 +111,7 @@ class TestGetMemoryUsage:
         memory = get_memory_usage()
         assert memory > 0  # nosec: B101 - Test assertion
 
-    @patch("performance_monitoring.psutil")
+    @patch("utils.performance_monitoring.psutil")
     def test_get_memory_psutil_not_available(self, mock_psutil):
         """Test when psutil is not available."""
         mock_psutil.Process.side_effect = ImportError("psutil not found")
@@ -125,14 +127,21 @@ class TestRecordMetric:
         result = record_metric("test_metric", 42.0)
         assert result is True  # nosec: B101 - Test assertion
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            "Known gap: the module-level record_metric() is a stub that returns "
+            "True and stores nothing, so metrics never reach the summary. "
+            "Remove this marker when a global registry is implemented."
+        ),
+    )
     def test_record_multiple_metrics(self):
-        """Test recording multiple metrics."""
+        """Recorded metrics appear in the performance summary."""
         record_metric("metric1", 1.0)
         record_metric("metric2", 2.0)
         summary = get_performance_summary()
-        assert (
-            "metric1" in summary or "metric2" in summary or summary == {}
-        )  # nosec: B101 - Test assertion
+        assert "metric1" in summary  # nosec: B101 - Test assertion
+        assert "metric2" in summary  # nosec: B101 - Test assertion
 
 
 class TestGetPerformanceSummary:
@@ -254,11 +263,14 @@ class TestPerformanceMonitor:
         """Test benchmark when disabled."""
         monitor = PerformanceMonitor(enabled=False)
 
-        def test_func():
-            return 42
+        test_func = MagicMock(return_value=42)
 
         result = monitor.benchmark("test", test_func, iterations=2)
-        assert result is None  # nosec: B101 - Test assertion
+
+        # A disabled monitor does not run the function; it reports an empty result
+        test_func.assert_not_called()  # nosec: B101 - Test assertion
+        assert result.iterations == 0  # nosec: B101 - Test assertion
+        assert result.times_ms == []  # nosec: B101 - Test assertion
 
     def test_get_report(self):
         """Test getting performance report."""
