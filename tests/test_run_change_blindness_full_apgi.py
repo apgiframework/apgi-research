@@ -10,6 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests._module_isolation import import_with_mocks
+
 # Add the parent directory to the path to import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -25,12 +27,16 @@ _mock_TrialType.NO_CHANGE = MagicMock()
 _mock_prepare_change_blindness.TrialType = _mock_TrialType
 _mock_prepare_change_blindness.TIME_BUDGET = 600
 
-# Patch sys.modules before import
-sys.modules["standard_apgi_runner"] = _mock_standard_apgi_runner
-sys.modules["experiment_apgi_integration"] = _mock_experiment_apgi_integration
-sys.modules["prepare_change_blindness"] = _mock_prepare_change_blindness
-
-import experiments.run_change_blindness_full_apgi as runner
+# Import the runner against mocks, then restore sys.modules so the mocks do not
+# leak into other test files.
+runner = import_with_mocks(
+    "experiments.run_change_blindness_full_apgi",
+    {
+        "standard_apgi_runner": _mock_standard_apgi_runner,
+        "experiment_apgi_integration": _mock_experiment_apgi_integration,
+        "prepare_change_blindness": _mock_prepare_change_blindness,
+    },
+)
 
 
 class TestConstants:

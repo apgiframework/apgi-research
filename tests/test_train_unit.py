@@ -7,7 +7,6 @@ them in isolation without running the module-level training loop.
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 import torch
@@ -15,28 +14,6 @@ import torch.nn.functional as F
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-# Mock all problematic dependencies before any import attempt
-sys.modules["kernels"] = MagicMock()
-sys.modules["rustbpe"] = MagicMock()
-sys.modules["pyarrow"] = MagicMock()
-sys.modules["pyarrow.parquet"] = MagicMock()
-sys.modules["tqdm"] = MagicMock()
-sys.modules["requests"] = MagicMock()
-
-# Create a mock prepare module
-mock_prepare = MagicMock()
-mock_prepare.MAX_SEQ_LEN = 2048
-mock_prepare.TIME_BUDGET = 600
-mock_prepare.Tokenizer = MagicMock
-mock_prepare.evaluate_bpb = MagicMock(return_value=0.5)
-mock_prepare.make_dataloader = MagicMock(
-    return_value=iter(
-        [(torch.randint(0, 1000, (2, 10)), torch.randint(0, 1000, (2, 10)), 1)]
-    )
-)
-sys.modules["prepare"] = mock_prepare
-
 
 # Create minimal train components for testing
 # (These mirror the implementations in train.py but don't require full import)
