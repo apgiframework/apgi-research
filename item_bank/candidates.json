@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0.0",
+  "note": "Intentionally empty. Candidate items enter only after independent content review; the linter and CI gate run on whatever is listed here.",
+  "block_order": [],
+  "items": []
+}

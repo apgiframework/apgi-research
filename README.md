@@ -2,6 +2,8 @@
 
 APGI Research is a Python desktop application and research toolkit for running psychological paradigm simulations, inspecting APGI dynamics, and improving experiment parameters with human oversight. It combines a CustomTkinter experiment dashboard, an autonomous optimization agent, hypothesis review, persistent memory, and security and observability modules.
 
+![APGI Research GUI: experiment list with run, XPR auto-tune and visualise controls, guardrails and hypothesis panels, and live log output](docs/images/gui-auto-improve-experiments.webp)
+
 The repository contains 29 experiment runners covering 28 paradigms, including a second Change Blindness implementation with full APGI integration. Internal implementation checks and simulated results do not establish clinical validity or regulatory certification.
 
 ## Application workflow
@@ -59,6 +61,21 @@ Save current results as JSON and export a Markdown research report containing ex
 ### Current interface limitations
 
 The result-import dialog currently acknowledges a selected file without loading its data. Result saving writes JSON even if a CSV extension is selected; report export writes Markdown even if HTML or PDF is selected. Use `.json` and `.md` respectively. The Settings dialog saves values to `.apgi_settings.json`, but does not currently load or apply them to the runtime; its concurrency, autosave, and refresh controls should not be treated as active features. The additional-constraints text box in XPR configuration is displayed but is not copied into the submitted run configuration.
+
+## Quick Install
+
+Requires Python 3.10-3.13. On macOS with Homebrew, first run
+`brew install python@3.13 python-tk@3.13` (`python-tk` provides `tkinter` for the GUI).
+
+```bash
+python3.13 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+python GUI_auto_improve_experiments.py
+```
+
+See [Installation](#installation) for notes on Homebrew's externally-managed
+Python and on stale editable installs.
 
 ## Architecture
 
@@ -554,7 +571,7 @@ and [maturity matrix](docs/Maturity-Matrix.md).
 | `APGI_CONFIG_SECRET_KEY` | Config validation secret | **Yes** | none |
 | `APGI_PSEUDONYM_SALT` | Pseudonymization salt | **Yes** | none |
 
-### Dependencies
+### Installation
 
 1. **Core Requirements** (Python 3.10+)
 
@@ -791,7 +808,7 @@ This project is licensed under the MIT License. See LICENSE file for details.
 ## Quick Start
 
 ```bash
-# Install dependencies (inside a virtual environment, see Installation above)
+# Install dependencies (inside a virtual environment, see Quick Install above)
 pip install -e .
 
 # Set required environment variables
