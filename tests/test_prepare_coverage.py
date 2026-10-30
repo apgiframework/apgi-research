@@ -18,8 +18,22 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
+from tests._module_isolation import mocked_modules
+
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
+@pytest.fixture(autouse=True)
+def _fresh_prepare_import():
+    """Give each test its own ``prepare`` import.
+
+    Tests patch ``sys.modules`` with mocks and then ``import prepare``, which
+    only picks the mocks up if ``prepare`` is not already cached; the previous
+    module is restored afterwards so nothing leaks to other files.
+    """
+    with mocked_modules(fresh=["prepare"]):
+        yield
 
 
 class TestConstants:
@@ -541,7 +555,11 @@ class TestTrainTokenizer:
                     with patch("prepare.TOKENIZER_DIR", tokenizer_dir):
                         import prepare as prep
 
-                        result = prep.train_tokenizer()
+                        # Defaults are bound at definition time, so patching the
+                        # module constants would not reach them; pass explicitly.
+                        result = prep.train_tokenizer(
+                            data_dir=data_dir, tokenizer_dir=tokenizer_dir
+                        )
                         assert result is True  # nosec: B101 - Test assertion
                         mock_rustbpe.Trainer.assert_not_called()
 
@@ -845,6 +863,7 @@ class TestGetTokenBytes:
         ):
             with tempfile.TemporaryDirectory() as tmp:
                 tokenizer_dir = Path(tmp)
+                (tokenizer_dir / "token_bytes.pt").touch()
                 with patch("prepare.TOKENIZER_DIR", tokenizer_dir):
                     import prepare as prep
 
