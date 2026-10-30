@@ -7,6 +7,7 @@ protocol documents, so a mutation test can prove it actually fails:
   protocol-locking      MANIFEST hashes lock every file; lock metadata is coherent
   timing-contracts      windows are ordered and fall on whole samples
   parallel-form-balance declared counterbalancing can be realised with equal cells
+  item-bank             item bank passes the content linter; reliability targets stay frozen
 
 Usage: python scripts/ci_gates.py [--gate NAME ...]   (exit 1 on any failure)
 """
@@ -255,11 +256,56 @@ def parallel_form_balance_errors(documents):
     return errors
 
 
+def item_bank_errors(documents=None, bank=None, folder=None):
+    """Lint the item bank and verify the frozen reliability targets (S1-L1-05..17)."""
+    import hashlib
+    import json
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from item_bank import lint
+
+    folder = pathlib.Path(folder) if folder else ROOT / "item_bank"
+    errors = list(
+        lint.lint_bank(
+            bank if bank is not None else lint.load_bank(folder / "candidates.json")
+        )
+    )
+    targets_path = folder / "reliability_targets.json"
+    lock = (folder / "reliability_targets.sha256").read_text(encoding="utf-8").strip()
+    if hashlib.sha256(targets_path.read_bytes()).hexdigest() != lock:
+        errors.append("reliability_targets.json changed without updating its lock hash")
+    t = json.loads(targets_path.read_text(encoding="utf-8"))
+    checks = [
+        ("omega >= 0.80", t["internal_consistency"]["minimum_per_subscale"] >= 0.80),
+        ("ICC(2,1) >= 0.70", t["test_retest"]["minimum"] >= 0.70),
+        ("retest interval 2-3 weeks", t["test_retest"]["interval_days"] == [14, 21]),
+        (
+            "6-month stability reported",
+            t["long_term_stability"]["interval_months"] == 6,
+        ),
+        (
+            "EFA/CFA on independent samples",
+            t["factor_structure"]["samples"] == "independent",
+        ),
+        (
+            "self-report vs behaviour r >= 0.15",
+            t["self_report_vs_behaviour"]["minimum_abs"] >= 0.15,
+        ),
+        ("status frozen", t.get("status") == "frozen"),
+    ]
+    errors.extend(
+        f"reliability targets: {name} not met" for name, ok in checks if not ok
+    )
+    return errors
+
+
 GATES = {
     "trial-sequencing": trial_sequencing_errors,
     "protocol-locking": protocol_locking_errors,
     "timing-contracts": timing_contract_errors,
     "parallel-form-balance": parallel_form_balance_errors,
+    "item-bank": item_bank_errors,
 }
 
 

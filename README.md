@@ -1,6 +1,23 @@
 # APGI Research Platform
 
+![APGI Research GUI: experiment list with run, XPR auto-tune and visualise controls, guardrails and hypothesis panels, and live log output](docs/images/gui-auto-improve-experiments.webp)
+
 An autonomous research system designed to optimize psychological experiments through AI-driven parameter tuning and continuous learning. The system implements a complete Autonomous Learning Algorithm (ALGORITH) with human-in-the-loop oversight and production-grade security, compliance, and observability.
+
+## Quick Install
+
+Requires Python 3.10-3.13. On macOS with Homebrew, first run
+`brew install python@3.13 python-tk@3.13` (`python-tk` provides `tkinter` for the GUI).
+
+```bash
+python3.13 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+python GUI_auto_improve_experiments.py
+```
+
+See [Installation](#installation) for notes on Homebrew's externally-managed
+Python and on stale editable installs.
 
 ## Architecture
 
@@ -482,7 +499,7 @@ results = kernel.finalize_run(run_context)
 | `APGI_CONFIG_SECRET_KEY` | Config validation secret | **Yes** | none |
 | `APGI_PSEUDONYM_SALT` | Pseudonymization salt | **Yes** | none |
 
-### Dependencies
+### Installation
 
 1. **Core Requirements** (Python 3.10+)
 
@@ -719,7 +736,7 @@ This project is licensed under the MIT License. See LICENSE file for details.
 ## Quick Start
 
 ```bash
-# Install dependencies (inside a virtual environment, see Installation above)
+# Install dependencies (inside a virtual environment, see Quick Install above)
 pip install -e .
 
 # Set required environment variables

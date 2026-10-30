@@ -1,0 +1,18 @@
+{
+  "record_version": "1.0.0",
+  "rationale": "Exclusion rests on diagnostic function, not licence. The bank measures non-clinical self-report context only; screening or diagnostic instruments (and items derived from them) are out of scope by design, which the dataset card states as a design feature.",
+  "compliance": ["FDA", "EU MDR"],
+  "excluded_instruments": [
+    {"name": "STAI", "aliases": ["State-Trait Anxiety Inventory"], "construct": "anxiety"},
+    {"name": "BDI-II", "aliases": ["BDI", "Beck Depression Inventory"], "construct": "depression"},
+    {"name": "PHQ-9", "aliases": ["PHQ-2", "PHQ-8", "Patient Health Questionnaire"], "construct": "depression"},
+    {"name": "GAD-7", "aliases": ["Generalized Anxiety Disorder"], "construct": "anxiety"},
+    {"name": "DASS-21", "aliases": ["DASS-42", "DASS"], "construct": "depression/anxiety/stress"},
+    {"name": "CES-D", "aliases": ["Center for Epidemiologic Studies Depression"], "construct": "depression"},
+    {"name": "HADS", "aliases": ["Hospital Anxiety and Depression Scale"], "construct": "anxiety/depression"},
+    {"name": "PCL-5", "aliases": ["PTSD Checklist"], "construct": "PTSD"},
+    {"name": "AUDIT", "aliases": ["Alcohol Use Disorders Identification Test"], "construct": "alcohol use"},
+    {"name": "EAT-26", "aliases": ["Eating Attitudes Test"], "construct": "eating disorders"},
+    {"name": "C-SSRS", "aliases": ["Columbia Suicide Severity Rating Scale"], "construct": "suicidality"}
+  ]
+}

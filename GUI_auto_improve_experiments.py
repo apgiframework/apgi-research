@@ -81,8 +81,21 @@ try:
 except ImportError:
     ProgressTracker = None  # type: ignore
 
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+try:
+    matplotlib.use("TkAgg")
+    from matplotlib.backends.backend_tkagg import (
+        FigureCanvasTkAgg,
+        NavigationToolbar2Tk,
+    )
+except ImportError:
+    # Headless runner (CI) or a Python built without Tk: keep the module
+    # importable so tests can load it; the GUI itself still needs a display.
+    matplotlib.use("Agg")
+    from matplotlib.backends.backend_agg import (
+        FigureCanvasAgg as FigureCanvasTkAgg,  # type: ignore[assignment]
+    )
+
+    NavigationToolbar2Tk = None  # type: ignore[assignment,misc]
 from matplotlib.figure import Figure
 
 # Configure matplotlib for embedded GUI

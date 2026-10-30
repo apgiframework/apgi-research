@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance]
+        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance, item-bank]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -109,7 +109,7 @@ jobs:
     - name: Run gate
       run: python scripts/ci_gates.py --gate ${{ matrix.gate }}
     - name: Gate mutation tests
-      run: pytest --noconftest tests/test_ci_gates.py -q -p no:cacheprovider
+      run: pytest --noconftest -o addopts="" tests/test_ci_gates.py tests/test_item_bank.py -q -p no:cacheprovider
 
   # ---------------------------------------------------------------------------
   # Performance Benchmark Gates
