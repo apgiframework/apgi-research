@@ -291,12 +291,18 @@ class TestHumanControlLayer:
             result = layer.configure_if_needed()
             assert result is False  # nosec: B101 - Test assertion
 
-    def test_configure_if_needed_invalid_choice(self):
-        """Test configure_if_needed with invalid choice."""
-        layer = HumanControlLayer()
-        with patch("builtins.input", return_value="invalid"):
+    def test_configure_if_needed_invalid_choice(self, tmp_path):
+        """An invalid mode choice is rejected and re-prompted, not accepted."""
+        layer = HumanControlLayer(config_path=str(tmp_path / "human_config.json"))
+        # The wizard re-prompts until it gets a valid choice, so a constant
+        # invalid answer would loop forever; cancel after one rejection.
+        with patch(
+            "builtins.input", side_effect=["invalid", KeyboardInterrupt()]
+        ) as mock_input:
             result = layer.configure_if_needed()
             assert result is False  # nosec: B101 - Test assertion
+            assert mock_input.call_count == 2  # nosec: B101 - Test assertion
+            assert not layer.config.get("configured")  # nosec: B101
 
     def test_configure_if_needed_invalid_threshold(self):
         """Test configure_if_needed with invalid threshold."""
