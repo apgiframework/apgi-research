@@ -13,10 +13,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import json
 import logging
-from tempfile import NamedTemporaryFile
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
+
+import human_layer
 
 logger = logging.getLogger(__name__)
 
@@ -405,21 +406,22 @@ class TestHumanLayerFunctions:
 class TestIntegration:
     """Integration tests for human layer functionality."""
 
-    def test_full_human_layer_workflow(self):
+    def test_full_human_layer_workflow(self, tmp_path):
         """Test complete human layer workflow."""
         with (
-            patch("human_layer._is_tkinter_running", return_value=True),
-            patch("human_layer.configure_human_interaction") as mock_configure,
+            patch(
+                "human_layer.HumanControlLayer.configure_if_needed", return_value=True
+            ) as mock_configure,
             patch("human_layer.select_task") as mock_select,
             patch("human_layer.review") as mock_review,
         ):
 
             # Configure human interaction
-            configure_if_needed()
+            assert configure_if_needed() is True  # nosec: B101 - Test assertion
             mock_configure.assert_called_once()
 
             # Create approval board
-            board = ApprovalBoard()
+            board = ApprovalBoard(storage_path=str(tmp_path / "board.json"))
 
             # Add task to board
             task = Hypothesis(
@@ -431,12 +433,14 @@ class TestIntegration:
             board.add_hypothesis(task)
 
             # Select task
+            # The patched module attributes are only seen through the module,
+            # not through names imported at the top of this file
             mock_select.return_value = task
-            selected_task = select_task()
+            selected_task = human_layer.select_task()
 
             # Review and approve task
             mock_review.return_value = [{"task": task, "action": "approve"}]
-            review({"test": "Integration review"})
+            human_layer.review({"test": "Integration review"})
 
             # Verify workflow
             mock_configure.assert_called_once()
@@ -449,17 +453,18 @@ class TestIntegration:
     def test_error_handling_in_workflow(self):
         """Test error handling in human layer workflow."""
         with patch(
-            "human_layer._is_tkinter_running", side_effect=Exception("GUI error")
+            "human_layer.HumanControlLayer.configure_if_needed",
+            side_effect=Exception("GUI error"),
         ):
 
-            # Should handle GUI error gracefully
+            # Errors raised while configuring must propagate to the caller
             with pytest.raises(Exception, match="GUI error"):
                 configure_if_needed()
 
-    def test_persistence_across_sessions(self):
+    def test_persistence_across_sessions(self, tmp_path):
         """Test data persistence across sessions."""
-        board1 = ApprovalBoard()
-        board2 = ApprovalBoard()
+        storage = tmp_path / "board.json"
+        board1 = ApprovalBoard(storage_path=str(storage))
 
         # Add data to first board
         task = Hypothesis(
@@ -471,23 +476,26 @@ class TestIntegration:
         board1.add_hypothesis(task)
 
         # Save first board
-        with NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-            board1.save(Path(temp_file.name))
+        board1.save(storage)
 
-            # Load second board from same file
-            board2 = ApprovalBoard.load(Path(temp_file.name))
+        # Load second board from same file
+        board2 = ApprovalBoard.load(storage)
 
-            # Verify data persistence
-            assert len(board2.hypotheses) == 1  # nosec: B101 - Test assertion
-            hypothesis = board2.get_hypothesis("Persistence test task")
-            assert hypothesis is not None  # nosec: B101 - Test assertion
-            assert (
-                hypothesis.title == "Persistence test task"
-            )  # nosec: B101 - Test assertion
+        # Verify data persistence
+        assert len(board2.hypotheses) == 1  # nosec: B101 - Test assertion
+        hypothesis = board2.get_hypothesis("persistence_test")
+        assert hypothesis is not None  # nosec: B101 - Test assertion
+        assert (
+            hypothesis.title == "Persistence test task"
+        )  # nosec: B101 - Test assertion
 
-    def test_concurrent_access(self):
+    def test_concurrent_access(self, tmp_path, monkeypatch):
         """Test concurrent access to human layer."""
-        board = ApprovalBoard()
+        import threading
+
+        # Keep the layer's config and selection log out of the working directory
+        monkeypatch.chdir(tmp_path)
+        board = ApprovalBoard(storage_path=str(tmp_path / "board.json"))
 
         # Add test data
         task = Hypothesis(
@@ -498,19 +506,32 @@ class TestIntegration:
         )
         board.add_hypothesis(task)
 
-        # Test concurrent access (should be thread-safe)
-        # This test mainly verifies no exceptions are raised
-        try:
-            # Multiple simultaneous operations
-            for _ in range(10):
+        errors = []
+
+        def worker(index: int) -> None:
+            try:
                 select_task()
-                review({"test": f"Concurrent review {_}"})
-        except Exception:
-            pytest.fail("Concurrent access should be thread-safe")
+                review({"test": f"Concurrent review {index}"})
+            except Exception as exc:  # pragma: no cover - reported below
+                errors.append(exc)
+
+        # GUI mode makes review() non-interactive, so no stdin is required
+        with patch("human_layer._is_tkinter_running", return_value=True):
+            threads = [threading.Thread(target=worker, args=(i,)) for i in range(10)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+        assert (
+            not errors
+        ), f"Concurrent access should be thread-safe: {errors}"  # nosec: B101
 
     def test_configuration_integration(self):
         """Test configuration integration with human layer."""
-        with patch("human_layer.configure_human_interaction") as mock_configure:
+        with patch(
+            "human_layer.HumanControlLayer.configure_if_needed", return_value=True
+        ) as mock_configure:
 
             # Test configuration
             configure_if_needed()

@@ -519,8 +519,12 @@ class TestLLMIntegration:
         self, llm_integration: LLMIntegration
     ) -> None:
         """Test initializing OpenAI client without API key."""
-        # Ensure no API key is set
-        with patch.dict(os.environ, {}, clear=True):
+        # Without an API key, a provider is usable only through litellm, so
+        # pin the "litellm unavailable" case this test is about
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch("xpr_agent_engine.litellm", None),
+        ):
             result = llm_integration._initialize_client("openai")
             if result:
                 raise AssertionError("Expected result to be False")

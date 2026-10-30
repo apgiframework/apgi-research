@@ -952,10 +952,10 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
 
 def pytest_runtest_teardown(item: pytest.Item, nextitem: Optional[pytest.Item]) -> None:
     """Teardown after each test."""
-    if item.nodeid in test_results:
-        test_results[item.nodeid]["duration"] = (
-            time.time() - test_results[item.nodeid]["start_time"]
-        )
+    result = test_results.get(item.nodeid)
+    # Tests skipped during setup may reach teardown without a recorded start.
+    if result is not None and "start_time" in result:
+        result["duration"] = time.time() - result["start_time"]
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:

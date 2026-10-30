@@ -21,6 +21,8 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
+from apgi_cli import cli_entrypoint, create_standard_parser
+
 # ---------------------------------------------------------------------------
 # Fixed Constants (DO NOT MODIFY)
 # ---------------------------------------------------------------------------
@@ -429,7 +431,9 @@ def verify_configurations() -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main(args=None) -> int:
+    """Verify configurations and run a quick sample simulation."""
     verify_configurations()
 
     # Run a quick simulation
@@ -471,6 +475,12 @@ if __name__ == "__main__":
     for lag, acc in summary["t2_accuracy_by_lag"].items():
         print(f"    Lag {lag} ({lag * 100}ms): {acc:.2%}")
     print(f"  Blink Magnitude: {summary['blink_magnitude']:.3f}")
+    return 0
+
+
+if __name__ == "__main__":
+    parser = create_standard_parser("Prepare Attentional Blink experiment")
+    cli_entrypoint(main, parser)
 
 # Standardized APGI Parameters Export (READ-ONLY)
 # These parameters are used by the AGENT-EDITABLE run file for APGI integration
