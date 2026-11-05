@@ -1,7 +1,9 @@
 name: APGI CI
 
 on:
+  workflow_dispatch:
   push:
+    tags: [ 'v*' ]
     branches: [ main, master, develop, feature/*, fix/* ]
   pull_request:
     branches: [ main, master, develop ]
@@ -32,12 +34,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install bandit semgrep safety
     - name: Bandit (Python SAST)
-      run: bandit -r . -f json -o bandit-results.json || true
+      run: bandit -r . -f json -o bandit-results.json --exit-zero
     - name: Semgrep (Pattern scanning)
-      run: semgrep --config=auto --json --output=semgrep-results.json . || true
+      run: semgrep --config=auto --json --output=semgrep-results.json .
     - name: Dependency scan (Safety)
-      run: safety check --json --output safety-results.json || true
+      run: safety check --json --output safety-results.json --continue-on-error
+    - name: Enforce security gate (fails on unresolved high/critical findings)
+      run: python scripts/security_gate.py
     - name: Upload security results
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: security-scan-results
@@ -97,7 +102,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance, item-bank]
+        gate: [trial-sequencing, protocol-locking, timing-contracts, parallel-form-balance, item-bank, construct-bridge]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -119,6 +124,23 @@ jobs:
           gate-tests.xml
           gate-coverage.xml
         if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Release acceptance (AUDIT-CI-002): real items and a real matched three-form
+  # bank must exist. Runs on version tags and manual dispatch, so it blocks a
+  # release without blocking ordinary development pushes.
+  # ---------------------------------------------------------------------------
+  release-acceptance:
+    name: Release Acceptance (item and form coverage)
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python -m pip install -r requirements-ci-gates.txt numpy scipy
+    - run: python scripts/ci_gates.py --release --gate acceptance-coverage
 
   # ---------------------------------------------------------------------------
   # Performance Benchmark Gates

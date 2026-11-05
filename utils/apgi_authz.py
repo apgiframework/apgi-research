@@ -188,6 +188,12 @@ class AuthorizationManager:
         elif env_secret:
             self.secret_key = env_secret
         else:
+            if os.environ.get("APGI_ENV", "").lower() in ("production", "prod"):
+                # Fail closed: an ephemeral key in production silently breaks
+                # token verification across restarts/workers (APGI-IMP-002).
+                raise RuntimeError(
+                    "APGI_JWT_SECRET must be set when APGI_ENV=production"
+                )
             self.secret_key = secrets.token_urlsafe(32)
             self.logger.warning(
                 "APGI_JWT_SECRET not set — using an ephemeral signing key. "
@@ -195,6 +201,7 @@ class AuthorizationManager:
                 "Set APGI_JWT_SECRET to a stable secret for production use."
             )
         self.token_blacklist: Set[str] = set()  # revoked tokens
+        self.locked: bool = False
 
     def _hash_token(self, token: str) -> str:
         """Hash a token for secure storage."""
@@ -241,7 +248,7 @@ class AuthorizationManager:
 
         # Create access token
         access_token = AuthenticationToken(
-            operator_id=os.getenv("APGI_OPERATOR_ID", "default_operator"),
+            operator_id=operator_id,
             token_type="access",  # nosec: B105 - token type, not password
             expires_at=datetime.now(timezone.utc) + access_token_ttl,
             scopes=scopes,
@@ -249,7 +256,7 @@ class AuthorizationManager:
 
         # Create refresh token
         refresh_token = AuthenticationToken(
-            operator_id=os.getenv("APGI_OPERATOR_ID", "default_operator"),
+            operator_id=operator_id,
             token_type="refresh",  # nosec: B105 - token type, not password
             expires_at=datetime.now(timezone.utc) + refresh_token_ttl,
             scopes=["refresh"],
@@ -479,6 +486,36 @@ class AuthorizationManager:
         operator.last_active = datetime.now(timezone.utc)
         return operator
 
+    def emergency_lock(self, reason: str = "emergency lock") -> int:
+        """Containment: deactivate every operator, revoke every issued token and
+        refuse further authorization until ``emergency_unlock`` (AUDIT-OPS-001).
+
+        Returns the number of operators deactivated.
+        """
+        self.locked = True
+        count = 0
+        for operator in self.operators.values():
+            if operator.is_active:
+                operator.is_active = False
+                count += 1
+        self.tokens.clear()
+        self.sessions.clear()
+        self.auth_tokens.clear()
+        self.refresh_tokens.clear()
+        self.logger.critical(f"EMERGENCY LOCK: {reason}; {count} operators deactivated")
+        return count
+
+    def emergency_unlock(self, operator_ids: Optional[List[str]] = None) -> int:
+        """Lift the lock; operators must be reactivated explicitly by id."""
+        self.locked = False
+        count = 0
+        for oid in operator_ids or []:
+            op = self.operators.get(oid)
+            if op and not op.is_active:
+                op.is_active = True
+                count += 1
+        return count
+
     def get_operator(self, operator_id: str) -> Optional[OperatorIdentity]:
         """Get operator by ID. NOTE: This does NOT authenticate."""
         return self.operators.get(operator_id)
@@ -503,7 +540,9 @@ class AuthorizationManager:
         context: AuthorizationContext,
     ) -> bool:
         """Authorize an action with full context."""
-        has_perm = context.operator.has_permission(context.action)
+        has_perm = (not self.locked) and context.operator.has_permission(
+            context.action
+        )
 
         # Log authorization decision
         log_entry = {

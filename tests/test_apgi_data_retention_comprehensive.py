@@ -296,7 +296,7 @@ class TestDeletionExecutor:
             subject_id="test_subject", experiment_id="test_experiment", data_path=None
         )
 
-        assert result is True  # nosec: B101 - Test assertion
+        assert result is False  # nosec: B101 - Test assertion
 
     def test_delete_experiment_data_with_audit(self):
         """Test experiment data deletion with audit logging."""
@@ -433,8 +433,8 @@ class TestDeletionExecutor:
         )
 
         assert (
-            result is True
-        )  # Should succeed without external callback  # nosec: B101 - Test assertion
+            result is False
+        )  # No callback => nothing destroyed => must not succeed  # nosec: B101 - Test assertion
 
     def test_destroy_kms_key_with_audit(self):
         """Test KMS key destruction with audit logging."""
@@ -553,6 +553,7 @@ class TestRetentionJobScheduler:
             subject_id="subject1",
             subject_name="Subject 1",
             data_categories=["experiment"],
+            data_paths={"experiment": ["/virtual/exp.npy"]},
         )
         record1.mark_for_deletion()
 
@@ -583,6 +584,7 @@ class TestRetentionJobScheduler:
             subject_name="Old Subject",
             created_at=datetime.now(timezone.utc) - timedelta(days=4000),
             data_categories=["experiment"],
+            data_paths={"experiment": ["/virtual/old.npy"]},
         )
         self.scheduler.data_subjects["old_subject"] = old_record
 
@@ -591,6 +593,7 @@ class TestRetentionJobScheduler:
             subject_name="Recent Subject",
             created_at=datetime.now(timezone.utc) - timedelta(days=10),
             data_categories=["experiment"],
+            data_paths={"experiment": ["/virtual/recent.npy"]},
         )
         self.scheduler.data_subjects["recent_subject"] = recent_record
 
@@ -634,6 +637,7 @@ class TestRetentionJobScheduler:
             subject_id="subject1",
             subject_name="Subject 1",
             data_categories=["experiment"],
+            data_paths={"experiment": ["/virtual/exp.npy"]},
         )
         record1.mark_for_deletion()
 
@@ -661,6 +665,7 @@ class TestRetentionJobScheduler:
             subject_id="test_subject",
             subject_name="Test Subject",
             data_categories=["experiment"],
+            data_paths={"experiment": ["/virtual/exp.npy"]},
         )
 
         # Mock deletion executor
@@ -672,7 +677,7 @@ class TestRetentionJobScheduler:
 
         assert result is True  # nosec: B101 - Test assertion
         mock_executor.delete_experiment_data.assert_called_once_with(
-            "test_subject", "experiment_test_subject"
+            "test_subject", "experiment_test_subject", "/virtual/exp.npy"
         )
 
     def test_execute_subject_deletion_config_category(self):
@@ -708,11 +713,12 @@ class TestRetentionJobScheduler:
         mock_executor.destroy_kms_key.return_value = True
         self.scheduler.deletion_executor = mock_executor
 
+        self.scheduler.kms_callback = lambda key_id: True
         result = self.scheduler._execute_subject_deletion(record)
 
         assert result is True  # nosec: B101 - Test assertion
         mock_executor.destroy_kms_key.assert_called_once_with(
-            "test_subject", "key_test_subject"
+            "test_subject", "key_test_subject", self.scheduler.kms_callback
         )
 
     def test_execute_subject_deletion_unknown_category(self):
@@ -943,11 +949,14 @@ class TestRetentionIntegration:
             retention_policy=RetentionPolicy.GDPR_DEFAULT,
         )
 
+        store = Path(tempfile.mkdtemp()) / "user_002.npy"
+        store.write_bytes(b"data")
         subject2 = self.scheduler.register_data_subject(
             subject_id="user_002",
             subject_name="User 002",
             data_categories=["experiment"],
             retention_policy=RetentionPolicy.CCPA_DEFAULT,
+            data_paths={"experiment": [str(store)]},
         )
 
         # Simulate time passage for subject2 to expire
@@ -967,6 +976,8 @@ class TestRetentionIntegration:
             results["expired_subjects"] == 1
         )  # subject2 should be expired  # nosec: B101 - Test assertion
         assert results["deletions_completed"] == 1  # nosec: B101 - Test assertion
+        assert not store.exists()  # actually gone  # nosec: B101 - Test assertion
+        assert self.scheduler.verify_zero_residual(subject2) == []  # nosec: B101
 
         # Only the expired subject is deleted, and that deletion is audited
         audit_calls = audit_sink.record_event.call_args_list
@@ -991,6 +1002,7 @@ class TestRetentionIntegration:
             subject_name="CCPA User",
             data_categories=["experiment"],
             retention_policy=RetentionPolicy.CCPA_DEFAULT,
+            data_paths={"experiment": ["/virtual/exp.npy"]},
         )
 
         self.scheduler.register_data_subject(
@@ -1027,6 +1039,7 @@ class TestRetentionIntegration:
             subject_name="Error Test",
             data_categories=["experiment"],
             retention_policy=RetentionPolicy.GDPR_DEFAULT,
+            data_paths={"experiment": ["/virtual/exp.npy"]},
         )
         subject.created_at = datetime.now(timezone.utc) - timedelta(days=400)
 
@@ -1080,3 +1093,43 @@ class TestRetentionIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestFailClosedDeletion:
+    """APGI-DAT-003 / APGI-CON-002: success only when stores are provably gone."""
+
+    def setup_method(self):
+        from utils.apgi_data_retention import RetentionConfig, RetentionJobScheduler
+
+        self.sched = RetentionJobScheduler(RetentionConfig())
+        self.sched.deletion_executor.audit_sink = Mock()
+
+    def _subject(self, **kw):
+        return self.sched.register_data_subject(
+            subject_id="s", subject_name="S", data_categories=kw.pop("cats"), **kw
+        )
+
+    def test_empty_inventory_is_not_success(self):
+        rec = self._subject(cats=["experiment"])
+        rec.mark_for_deletion()
+        assert self.sched._execute_subject_deletion(rec) is False
+        assert not rec.deletion_completed
+
+    def test_kms_requires_callback_then_succeeds(self, tmp_path):
+        f = tmp_path / "x.bin"
+        f.write_bytes(b"1")
+        rec = self._subject(cats=["experiment", "kms_key"], data_paths={"experiment": [str(f)]})
+        assert self.sched._execute_subject_deletion(rec) is False  # no callback
+        f.write_bytes(b"1")
+        self.sched.kms_callback = lambda key_id: key_id == "key_s"
+        assert self.sched._execute_subject_deletion(rec) is True
+        assert not f.exists() and rec.deletion_completed
+
+    def test_residual_blocks_completion(self, tmp_path):
+        f = tmp_path / "x.bin"
+        f.write_bytes(b"1")
+        rec = self._subject(cats=["experiment"], data_paths={"experiment": [str(f), str(tmp_path / "derived.bin")]})
+        (tmp_path / "derived.bin").write_bytes(b"2")
+        # delete only the first store, leaving derived data behind
+        self.sched.deletion_executor.delete_experiment_data("s", "e", str(f))
+        assert self.sched.verify_zero_residual(rec) == [str(tmp_path / "derived.bin")]

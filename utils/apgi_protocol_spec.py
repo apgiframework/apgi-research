@@ -15,6 +15,7 @@ Two v1.1 rules matter for code that reports outcomes:
   (kappa = 100, alpha = 0.3, beta = 0.7 are gone).
 """
 
+import hashlib
 import json
 from dataclasses import dataclass, field
 from enum import Enum
@@ -25,6 +26,65 @@ PROTOCOLS_DIR = Path(__file__).resolve().parents[1] / "protocols"
 
 # Kept in step with apgi-framework (protocols/CHANGELOG.md, scripts/validate_protocols.py).
 SPECIFICATION_VERSION = "1.1.0"
+
+
+class ProtocolLockError(RuntimeError):
+    """A protocol file does not match the registered lock (APGI-REP-001)."""
+
+
+class VerdictConflictError(ValueError):
+    """Contradictory or malformed evidence flags for a registered prediction (APGI-VAL-001)."""
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def verify_protocol_lock(folder: Optional[Path] = None) -> Dict[str, str]:
+    """Verify every protocol payload against ``MANIFEST.json`` before runtime use.
+
+    Checks each manifest entry exists, matches its SHA-256, stays inside
+    ``folder``, and that no unlisted ``protocol_*.json`` / ``VALIDATION.json`` /
+    ``CHANGELOG.md`` file is present. Returns ``{relative_path: sha256}`` of the
+    verified lock (retain it as run evidence). Raises ``ProtocolLockError``
+    before any protocol content is parsed or used.
+    """
+    folder = Path(folder or PROTOCOLS_DIR).resolve()
+    manifest_path = folder / "MANIFEST.json"
+    if not manifest_path.is_file():
+        raise ProtocolLockError(f"protocol lock missing: {manifest_path}")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        entries = manifest["files"]
+    except (ValueError, KeyError, TypeError) as exc:
+        raise ProtocolLockError(f"protocol lock unreadable: {exc}") from exc
+    if manifest.get("release") != SPECIFICATION_VERSION:
+        raise ProtocolLockError(
+            f"protocol lock release {manifest.get('release')!r} != {SPECIFICATION_VERSION!r}"
+        )
+    verified: Dict[str, str] = {}
+    for entry in entries:
+        name = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name:
+            raise ProtocolLockError("protocol lock has an invalid entry")
+        path = (folder / name).resolve()
+        if not path.is_relative_to(folder):
+            raise ProtocolLockError(f"protocol lock path escapes folder: {name}")
+        if not path.is_file():
+            raise ProtocolLockError(f"locked protocol file missing: {name}")
+        digest = _sha256_file(path)
+        if digest != entry.get("sha256"):
+            raise ProtocolLockError(f"locked protocol file altered: {name}")
+        verified[name] = digest
+    payload = {
+        p.name
+        for pattern in ("protocol_*.json", "VALIDATION.json", "CHANGELOG.md")
+        for p in folder.glob(pattern)
+    }
+    unlocked = sorted(payload - set(verified))
+    if unlocked:
+        raise ProtocolLockError(f"protocol files not covered by the lock: {unlocked}")
+    return verified
 
 
 class Verdict(str, Enum):
@@ -42,6 +102,13 @@ def classify_prediction(confirmed: bool, falsified: bool = False) -> Verdict:
     (``falsifying_evidence`` / ``falsifying_thresholds``), never from the
     negation of ``confirmed``.
     """
+    if not isinstance(confirmed, bool) or not isinstance(falsified, bool):
+        raise VerdictConflictError("confirmed and falsified must be booleans")
+    if confirmed and falsified:
+        raise VerdictConflictError(
+            "prediction cannot be both confirmed and falsified; "
+            "open a deviation record instead of choosing a verdict"
+        )
     if confirmed:
         return Verdict.CONFIRMED
     if falsified:
@@ -94,7 +161,17 @@ class ProtocolSpec:
     raw: Dict[str, Any] = field(repr=False)
 
     @classmethod
-    def from_file(cls, path: Path) -> "ProtocolSpec":
+    def from_file(cls, path: Path, verify_lock: bool = True) -> "ProtocolSpec":
+        """Parse one protocol file, verifying the registered lock first.
+
+        ``verify_lock=False`` exists only for tooling that edits drafts (it
+        marks nothing as registered); production callers must not pass it.
+        """
+        path = Path(path)
+        if verify_lock:
+            verified = verify_protocol_lock(path.parent)
+            if path.name not in verified:
+                raise ProtocolLockError(f"{path.name} is not part of the lock")
         data = json.loads(path.read_text(encoding="utf-8"))
         return cls(
             protocol_id=data["protocol_id"],
@@ -144,6 +221,7 @@ def load_all_protocols(protocols_dir: Optional[Path] = None) -> Dict[str, Protoc
     folder = protocols_dir or PROTOCOLS_DIR
     if not folder.is_dir():
         raise FileNotFoundError(f"Protocol specification folder not found: {folder}")
+    verify_protocol_lock(folder)
     specs = (ProtocolSpec.from_file(p) for p in sorted(folder.glob("protocol_*.json")))
     return {spec.protocol_id: spec for spec in specs}
 

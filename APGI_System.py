@@ -78,6 +78,46 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
+# ---------------------------------------------------------------------------
+# Recorded run seed (APGI-REP-002). Every stochastic path draws from this single
+# generator, so one recorded seed reproduces a complete run. Call
+# ``set_run_seed(seed)`` before a run and store ``get_run_seed()`` with its
+# outputs; if no seed is set, one is drawn once and recorded so the run can
+# still be replayed.
+# ---------------------------------------------------------------------------
+_RUN_SEED: Optional[int] = None
+_RUN_RNG: Optional[np.random.Generator] = None
+
+
+def set_run_seed(seed: Optional[int] = None) -> int:
+    """Seed (or reseed) the run-wide RNG and return the seed in force."""
+    global _RUN_SEED, _RUN_RNG
+    if seed is None:
+        import secrets
+
+        seed = secrets.randbits(63)
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+        raise ValueError("seed must be a non-negative integer")
+    _RUN_SEED = seed
+    _RUN_RNG = np.random.default_rng(seed)
+    return seed
+
+
+def get_run_seed() -> int:
+    """The seed of the current run (drawn and recorded on first use)."""
+    if _RUN_SEED is None:
+        set_run_seed()
+    assert _RUN_SEED is not None
+    return _RUN_SEED
+
+
+def run_rng() -> np.random.Generator:
+    """The run-wide generator; use instead of the global numpy generators."""
+    if _RUN_RNG is None:
+        set_run_seed()
+    assert _RUN_RNG is not None
+    return _RUN_RNG
+
 
 # Suppress numpy overflow warnings from legitimate numerical operations
 # Use context manager for specific functions where overflow is expected
@@ -301,7 +341,7 @@ class DynamicalSystemEquations:
             New accumulated surprise S(t+dt)
         """
         if rng is None:
-            rng = np.random.default_rng()
+            rng = run_rng()
 
         # Leaky integration term
         decay = -S / tau_S
@@ -358,7 +398,7 @@ class DynamicalSystemEquations:
             New threshold θ(t+dt)
         """
         if rng is None:
-            rng = np.random.default_rng()
+            rng = run_rng()
 
         # Arousal-dependent baseline threshold
         theta_0 = theta_0_sleep + (1.0 - A) * (theta_0_alert - theta_0_sleep)
@@ -418,7 +458,7 @@ class DynamicalSystemEquations:
             New somatic marker M(t+dt)
         """
         if rng is None:
-            rng = np.random.default_rng()
+            rng = run_rng()
 
         # Target somatic marker (predicted homeostatic cost)
         M_star = np.tanh(beta_M * eps_i)
@@ -478,7 +518,7 @@ class DynamicalSystemEquations:
             New arousal level A(t+dt)
         """
         if rng is None:
-            rng = np.random.default_rng()
+            rng = run_rng()
 
         # Handle eps_i_history parameter (can be None or empty list)
         if eps_i_history is None:
@@ -574,7 +614,7 @@ class DynamicalSystemEquations:
             New precision Π(t+dt)
         """
         if rng is None:
-            rng = np.random.default_rng()
+            rng = run_rng()
 
         # Exponential approach to target
         dynamics = alpha_Pi * (Pi_target - Pi)
@@ -1381,7 +1421,7 @@ class MeasurementEquations:
         HEP = HEP_baseline * precision_mod * somatic_mod * gain_mod
 
         # Add noise (measurement error)
-        HEP += np.random.normal(0, HEP_NOISE_STD)
+        HEP += run_rng().normal(0, HEP_NOISE_STD)
 
         return max(HEP_MINIMUM, HEP)
 
@@ -1401,7 +1441,7 @@ class MeasurementEquations:
 
         if surprise_excess <= 0:
             # No ignition → long latency (or no P3b)
-            return P3B_NO_IGNITION_LATENCY + np.random.normal(
+            return P3B_NO_IGNITION_LATENCY + run_rng().normal(
                 0, P3B_NO_IGNITION_NOISE_STD
             )
 
@@ -1412,7 +1452,7 @@ class MeasurementEquations:
         P3b_latency = baseline_latency - latency_reduction
 
         # Add noise
-        P3b_latency += np.random.normal(0, P3B_LATENCY_NOISE_STD)
+        P3b_latency += run_rng().normal(0, P3B_LATENCY_NOISE_STD)
 
         return float(np.clip(P3b_latency, P3B_MIN_LATENCY, P3B_MAX_LATENCY))
 
@@ -1457,7 +1497,7 @@ class MeasurementEquations:
         )
 
         # Add measurement noise
-        d_prime += np.random.normal(0, DETECTION_NOISE_STD)
+        d_prime += run_rng().normal(0, DETECTION_NOISE_STD)
 
         return max(DETECTION_MINIMUM, d_prime)
 
@@ -1475,7 +1515,7 @@ class MeasurementEquations:
         )
 
         # Add variability
-        duration += np.random.normal(0, IGNITION_DURATION_NOISE_STD)
+        duration += run_rng().normal(0, IGNITION_DURATION_NOISE_STD)
 
         return float(np.clip(duration, IGNITION_MIN_DURATION, IGNITION_MAX_DURATION))
 
@@ -2160,7 +2200,7 @@ class EnhancedSurpriseIgnitionSystem:
         )
 
         # Bernoulli trial for ignition
-        B_new = 1 if np.random.random() < P_ignition else 0
+        B_new = 1 if run_rng().random() < P_ignition else 0
 
         # ========== POST-IGNITION RESET ==========
         if B_new == 1:
@@ -2737,9 +2777,9 @@ def run_complete_demo() -> Tuple[Any, Any, Any, Any]:
         }
 
         # Add occasional surprise events
-        if np.random.random() < 0.01:  # 1% chance per timestep
+        if run_rng().random() < 0.01:  # 1% chance per timestep
             complete_inputs["observed_e"] = float(
-                complete_inputs.get("observed_e", 0.0) + np.random.normal(3.0, 0.8)
+                complete_inputs.get("observed_e", 0.0) + run_rng().normal(3.0, 0.8)
             )
             print(f"      Surprise event at t={t:.1f}s")
 

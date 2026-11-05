@@ -188,29 +188,39 @@ def require_auth(
 
 
 def _get_operator_identity() -> OperatorIdentity:
-    """Get or create operator identity for CLI execution."""
-    # Try to get from environment
-    operator_id = os.environ.get("APGI_OPERATOR_ID")
-    username = os.environ.get("APGI_OPERATOR_NAME", "cli_user")
-    role_str = os.environ.get("APGI_OPERATOR_ROLE", "operator")
+    """Resolve the CLI caller's identity without trusting unverified env values.
 
-    try:
-        role = Role(role_str)
-    except ValueError:
-        role = Role.OPERATOR
-
-    # Check for pre-registered operator
+    Precedence (APGI-API-002 / APGI-IMP-002):
+      1. ``APGI_OPERATOR_TOKEN`` (JWT access token or registered secret token) is
+         authenticated against the authorization manager; failure raises.
+      2. Explicit local-trust mode (``APGI_TRUSTED_LOCAL=1`` and not production)
+         may register the environment-declared name/role, as before.
+      3. Otherwise the caller is a least-privilege GUEST. ``APGI_OPERATOR_ID`` and
+         ``APGI_OPERATOR_ROLE`` alone never grant privileges.
+    """
     authz = get_authz_manager()
-    if operator_id:
-        existing = authz.get_operator(operator_id)
-        if existing:
-            return existing
+    token = os.environ.get("APGI_OPERATOR_TOKEN")
+    if token:
+        operator = authz.authenticate_with_jwt(token) or authz.authenticate_operator(
+            token
+        )
+        if operator is None:
+            raise PermissionError("APGI_OPERATOR_TOKEN failed authentication")
+        return operator
 
-    # Create new operator
-    operator, _ = authz.register_operator(
-        username=username,
-        role=role,
+    username = os.environ.get("APGI_OPERATOR_NAME", "cli_user")
+    trusted_local = (
+        os.environ.get("APGI_TRUSTED_LOCAL") == "1"
+        and os.environ.get("APGI_ENV", "").lower() not in ("production", "prod")
     )
+    role = Role.GUEST
+    if trusted_local:
+        try:
+            role = Role(os.environ.get("APGI_OPERATOR_ROLE", "operator"))
+        except ValueError:
+            role = Role.GUEST
+
+    operator, _ = authz.register_operator(username=username, role=role)
     return operator
 
 

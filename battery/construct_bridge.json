@@ -1,0 +1,31 @@
+{
+  "bridge_version": "1.0.0",
+  "status": "draft_pending_scientific_authority_review",
+  "note": "Construct-to-task bridge rows (S3-BAT-05). A task may enter the battery only when its row is complete (battery/bridge.py, CI gate 'construct-bridge'). Rows record the mapping the registered protocol proposes; they do not validate it.",
+  "rows": [
+    {"row_id": "S3-BAT-05.1", "construct": "Access threshold", "symbol": "θₜ", "task": "near_threshold_detection",
+     "observables": ["contrast_at_50pct_detection", "criterion_c"], "estimator": "battery.psychometric.fit_psychometric; battery.sdt.dprime_c",
+     "testable_v0_1": true, "reporting_scale": "device_relative", "gate": null,
+     "limitations": "Contrast thresholds are device-relative (S3-BAT-01.8), never population-absolute."},
+    {"row_id": "S3-BAT-05.2", "construct": "Exteroceptive precision", "symbol": "Πₑ", "task": "near_threshold_detection",
+     "observables": ["psychometric_slope", "meta_d_prime_over_d_prime"], "estimator": "battery.psychometric.fit_psychometric; battery.metad.fit_meta_d",
+     "testable_v0_1": true, "reporting_scale": "device_relative", "gate": null,
+     "limitations": "Per-session MLE meta-d' only; the registered hierarchical estimate needs a sampler and pooled data."},
+    {"row_id": "S3-BAT-05.3", "construct": "Precision updating", "symbol": "α·Π", "task": "reversal_learning",
+     "observables": ["precision_weighted_learning_composite", "perseveration"], "estimator": "battery.reversal.fit_reversal; battery.reversal.precision_weighted_learning_composite",
+     "testable_v0_1": true, "reporting_scale": "composite_only", "gate": null,
+     "limitations": "Only the composite is reported; alpha and Pi are not separately identified."},
+    {"row_id": "S3-BAT-05.4", "construct": "Ignition", "symbol": "ignition", "task": "backward_masking",
+     "observables": ["accuracy_by_soa", "soa_50", "threshold_soa_visibility_distribution"], "estimator": "battery.masking.summarize",
+     "testable_v0_1": false, "reporting_scale": "frame_locked_soa", "gate": "S3-DEC-01",
+     "limitations": "Blocked until decision D5 (masking vs attentional blink) is recorded by the scientific authority."},
+    {"row_id": "S3-BAT-05.5", "construct": "Interoceptive precision", "symbol": "Πᵢ", "task": "layer1_self_report",
+     "observables": ["self_report_only"], "estimator": "item_bank (no behavioural estimator)",
+     "testable_v0_1": false, "reporting_scale": "self_report", "gate": "S1-L1-09",
+     "limitations": "Not behaviourally testable in v0.1; self-report context only."},
+    {"row_id": "S3-BAT-05.6", "construct": "Somatic valuation", "symbol": "β", "task": null,
+     "observables": [], "estimator": null,
+     "testable_v0_1": false, "reporting_scale": "not_measured", "gate": null,
+     "limitations": "Not measured in v0.1. No task may claim to measure it."}
+  ]
+}

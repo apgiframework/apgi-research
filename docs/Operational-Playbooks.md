@@ -11,7 +11,7 @@
 **Steps:**
 
 1. **Triage**: Check `apgi_logging` outputs to identify the faulting module (Engine, Validator, Security Adapter).
-2. **Containment**: If an untrusted execution boundary is breached, halt the experiment queue immediately and lock the environment via `get_authz_manager().emergency_lock()`.
+2. **Containment**: If an untrusted execution boundary is breached, halt the experiment queue immediately and lock the environment via `get_authz_manager().emergency_lock(reason=...)` (deactivates all operators, revokes all tokens; lift with `emergency_unlock(operator_ids=[...])`).
 3. **Investigation**: Query the `get_audit_sink()` audit trails to identify the latest parameter changes or experiment states leading to the crash.
 
    ```python

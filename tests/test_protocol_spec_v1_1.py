@@ -100,7 +100,6 @@ class TestVerdicts:
         "confirmed, falsified, expected",
         [
             (True, False, Verdict.CONFIRMED),
-            (True, True, Verdict.CONFIRMED),
             (False, True, Verdict.FALSIFIED),
             (False, False, Verdict.INDETERMINATE),
         ],
@@ -109,6 +108,64 @@ class TestVerdicts:
         self, confirmed, falsified, expected
     ):
         assert classify_prediction(confirmed, falsified) is expected
+
+    def test_conflicting_flags_raise(self):
+        from utils.apgi_protocol_spec import VerdictConflictError
+
+        with pytest.raises(VerdictConflictError):
+            classify_prediction(True, True)
+
+    @pytest.mark.parametrize("bad", [1, 0, None, "yes"])
+    def test_non_boolean_flags_raise(self, bad):
+        from utils.apgi_protocol_spec import VerdictConflictError
+
+        with pytest.raises(VerdictConflictError):
+            classify_prediction(bad, False)
+
+
+class TestRuntimeProtocolLock:
+    def _copy(self, tmp_path):
+        import shutil
+
+        from utils.apgi_protocol_spec import PROTOCOLS_DIR
+
+        dst = tmp_path / "protocols"
+        shutil.copytree(PROTOCOLS_DIR, dst)
+        return dst
+
+    def test_pristine_lock_verifies(self):
+        from utils.apgi_protocol_spec import verify_protocol_lock
+
+        assert len(verify_protocol_lock()) >= 10
+
+    def test_altered_protocol_rejected_before_use(self, tmp_path):
+        from utils.apgi_protocol_spec import ProtocolLockError
+
+        folder = self._copy(tmp_path)
+        target = folder / "protocol_1_cardiac_eeg.json"
+        target.write_text(target.read_text(encoding="utf-8") + " ", encoding="utf-8")
+        with pytest.raises(ProtocolLockError, match="altered"):
+            load_all_protocols(folder)
+        from utils.apgi_protocol_spec import ProtocolSpec
+
+        with pytest.raises(ProtocolLockError):
+            ProtocolSpec.from_file(target)
+
+    def test_unlocked_extra_protocol_rejected(self, tmp_path):
+        from utils.apgi_protocol_spec import ProtocolLockError
+
+        folder = self._copy(tmp_path)
+        (folder / "protocol_9_extra.json").write_text("{}", encoding="utf-8")
+        with pytest.raises(ProtocolLockError, match="not covered"):
+            load_all_protocols(folder)
+
+    def test_missing_manifest_rejected(self, tmp_path):
+        from utils.apgi_protocol_spec import ProtocolLockError
+
+        folder = self._copy(tmp_path)
+        (folder / "MANIFEST.json").unlink()
+        with pytest.raises(ProtocolLockError, match="missing"):
+            load_all_protocols(folder)
 
 
 class TestParameterDefaults:

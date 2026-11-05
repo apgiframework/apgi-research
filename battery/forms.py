@@ -45,3 +45,36 @@ def form_for_session(order: Sequence[str], session_index: int) -> str:
     if not order:
         raise ValueError("empty form order")
     return order[(session_index - 1) % len(order)]
+
+
+def williams_orders(n_forms: int = 3) -> list[tuple[int, ...]]:
+    """Williams-design form orders (S3-BAT-04): every form appears in every
+    position equally often and follows every other form equally often. For an
+    odd number of forms this needs 2*n sequences (the rows and their reversals)."""
+    if n_forms < 2:
+        raise ValueError("need at least two forms")
+    first = [0]
+    lo, hi = 1, n_forms - 1
+    while len(first) < n_forms:
+        first.append(hi)
+        hi -= 1
+        if len(first) < n_forms:
+            first.append(lo)
+            lo += 1
+    rows = [tuple((x + i) % n_forms for x in first) for i in range(n_forms)]
+    if n_forms % 2:
+        rows += [tuple(reversed(r)) for r in rows]
+    return rows
+
+
+def assign_order_at_enrolment(
+    enrolment_index: int, form_labels: Sequence[str] = ("A", "B", "C")
+) -> list[str]:
+    """Order for the participant enrolling at 0-based `enrolment_index`, cycling
+    through the Williams design so any block of 2n enrolments is perfectly
+    balanced. The result is stored with the participant and never recomputed."""
+    if enrolment_index < 0:
+        raise ValueError("enrolment_index must be non-negative")
+    rows = williams_orders(len(form_labels))
+    row = rows[enrolment_index % len(rows)]
+    return [form_labels[i] for i in row]
