@@ -31,11 +31,35 @@ def timing_error_distribution(errors_ms: list[float]) -> dict[str, float]:
     }
 
 
+def quarantine_reasons(session: dict[str, Any]) -> list[str]:
+    """Reasons a session cannot be tiered because required measurements are absent
+    or malformed. An empty list means the session may be tiered."""
+    import math
+
+    reasons: list[str] = []
+    errs = session.get("timing_errors_ms")
+    if not isinstance(errs, (list, tuple)) or not errs:
+        reasons.append("missing_timing_measurements")
+    elif not all(isinstance(e, (int, float)) and math.isfinite(e) for e in errs):
+        reasons.append("nonfinite_timing_measurements")
+    dropped = session.get("dropped_frame_fraction")
+    if not isinstance(dropped, (int, float)) or not math.isfinite(dropped):
+        reasons.append("missing_dropped_frame_fraction")
+    elif not 0.0 <= dropped <= 1.0:
+        reasons.append("invalid_dropped_frame_fraction")
+    return reasons
+
+
 def assign_tier(
     session: dict[str, Any], config: Optional[dict[str, Any]] = None
 ) -> tuple[str, list[str]]:
     """A: primary norms; B: sensitivity analyses; C: excluded from norms."""
     cfg = config or TIER_CONFIG
+    # A session with missing/non-finite timing evidence is quarantined (Tier C),
+    # never defaulted to Tier A (APGI-DAT-002).
+    missing = quarantine_reasons(session)
+    if missing:
+        return "C", missing
     p95 = timing_error_distribution(session.get("timing_errors_ms", [])).get("p95", 0.0)
     dropped = float(session.get("dropped_frame_fraction", 0.0))
     failed = int(session.get("failed_attention_checks", 0))

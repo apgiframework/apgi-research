@@ -120,7 +120,7 @@ class EnhancedVisualSearchRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -145,13 +145,13 @@ class EnhancedVisualSearchRunner:
             else:
                 self.hierarchical = None  # type: ignore[assignment]
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None  # type: ignore[assignment]
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators: Dict[str, float] = {
                 "ACh": float(cast(float, APGI_PARAMS.get("ACh", 1.0))),
                 "NE": float(cast(float, APGI_PARAMS.get("NE", 1.0))),
@@ -216,7 +216,7 @@ class EnhancedVisualSearchRunner:
                 "survival" if trial.search_type == SearchType.CONJUNCTION else "neutral"
             )
 
-            # 100/100: Determine precision based on neuromodulators
+            # APGI component: Determine precision based on neuromodulators
             ach_boost = float(self.neuromodulators.get("ACh", 1.0))
             ne_effect = float(self.neuromodulators.get("NE", 1.0))
             da_effect = float(self.neuromodulators.get("DA", 1.0))
@@ -224,7 +224,7 @@ class EnhancedVisualSearchRunner:
             precision_ext = 1.5 * ach_boost * (1.0 + 0.2 * da_effect)
             precision_int = 1.5 * (1.0 + 0.2 * ne_effect)
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 nm_floats = {
                     k: float(v) for k, v in (self.neuromodulators or {}).items()
@@ -244,7 +244,7 @@ class EnhancedVisualSearchRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):

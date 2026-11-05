@@ -62,6 +62,10 @@ class DataSubjectRecord:
     deletion_requested_at: Optional[datetime] = None
     deletion_completed: bool = False
     deletion_completed_at: Optional[datetime] = None
+    # Inventory of every store holding this subject's data, by category. Deletion
+    # is only reported complete when every registered store is verifiably gone
+    # (APGI-DAT-003, APGI-CON-002); an empty inventory is a failure, not a success.
+    data_paths: Dict[str, List[str]] = field(default_factory=dict)
 
     def is_retention_expired(self, config: RetentionConfig) -> bool:
         """Check if retention period has expired."""
@@ -99,6 +103,9 @@ class DeletionExecutor:
     ) -> bool:
         """Delete experiment data for a subject."""
         try:
+            if not data_path:
+                # Nothing was deleted, so success must not be reported (APGI-DAT-003).
+                raise ValueError("data_path is required to delete experiment data")
             if data_path:
                 if os.path.exists(data_path):
                     # Real deletion: remove file
@@ -178,11 +185,12 @@ class DeletionExecutor:
     ) -> bool:
         """Destroy KMS key associated with subject."""
         try:
-            if kms_callback:
-                # Call external KMS to destroy key
-                success = kms_callback(key_id)
-                if not success:
-                    raise Exception("KMS key destruction failed")
+            if kms_callback is None:
+                # Without a KMS callback nothing was destroyed (APGI-CON-002).
+                raise ValueError("kms_callback is required to destroy a KMS key")
+            success = kms_callback(key_id)
+            if not success:
+                raise RuntimeError("KMS key destruction failed")
 
             self.logger.info(f"Destroyed KMS key {key_id} for subject {subject_id}")
 
@@ -210,6 +218,17 @@ class RetentionJobScheduler:
         self.logger = get_logger("apgi.retention.scheduler")
         self.deletion_executor = DeletionExecutor(config)
         self.data_subjects: Dict[str, DataSubjectRecord] = {}
+        self.kms_callback: Optional[Callable[[str], bool]] = None
+
+    @staticmethod
+    def verify_zero_residual(record: DataSubjectRecord) -> List[str]:
+        """Paths from the subject's inventory that still exist (empty = none)."""
+        return [
+            path
+            for paths in record.data_paths.values()
+            for path in paths
+            if os.path.exists(path)
+        ]
 
     def register_data_subject(
         self,
@@ -217,13 +236,15 @@ class RetentionJobScheduler:
         subject_name: str,
         data_categories: List[str],
         retention_policy: RetentionPolicy = RetentionPolicy.GDPR_DEFAULT,
+        data_paths: Optional[Dict[str, List[str]]] = None,
     ) -> DataSubjectRecord:
-        """Register a data subject."""
+        """Register a data subject and (optionally) their store inventory."""
         record = DataSubjectRecord(
             subject_id=subject_id,
             subject_name=subject_name,
             data_categories=data_categories,
             retention_policy=retention_policy,
+            data_paths={k: list(v) for k, v in (data_paths or {}).items()},
         )
         self.data_subjects[subject_id] = record
         self.logger.info(f"Registered data subject {subject_name}")
@@ -278,17 +299,23 @@ class RetentionJobScheduler:
     def _execute_subject_deletion(self, record: DataSubjectRecord) -> bool:
         """Execute deletion for a data subject."""
         try:
-            # Delete each data category
+            # Delete each registered store; fail closed on anything unproven.
             all_success = True
             for category in record.data_categories:
                 if category == "experiment":
-                    # Delete experiment data (would need actual data path)
-                    success = self.deletion_executor.delete_experiment_data(
-                        record.subject_id,
-                        f"experiment_{record.subject_id}",
-                    )
-                    if not success:
+                    paths = record.data_paths.get("experiment", [])
+                    if not paths:
+                        self.logger.error(
+                            f"No registered experiment data stores for {record.subject_id}"
+                        )
                         all_success = False
+                    for path in paths:
+                        if not self.deletion_executor.delete_experiment_data(
+                            record.subject_id,
+                            f"experiment_{record.subject_id}",
+                            path,
+                        ):
+                            all_success = False
                 elif category == "config":
                     success = self.deletion_executor.delete_config_data(
                         record.subject_id,
@@ -300,9 +327,17 @@ class RetentionJobScheduler:
                     success = self.deletion_executor.destroy_kms_key(
                         record.subject_id,
                         f"key_{record.subject_id}",
+                        self.kms_callback,
                     )
                     if not success:
                         all_success = False
+
+            residual = self.verify_zero_residual(record)
+            if residual:
+                self.logger.error(
+                    f"Residual data after deletion for {record.subject_id}: {residual}"
+                )
+                all_success = False
 
             if all_success:
                 record.mark_deletion_complete()

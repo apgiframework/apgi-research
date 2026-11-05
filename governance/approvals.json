@@ -1,0 +1,44 @@
+{
+  "record_version": "1.0.0",
+  "requirement": "AUDIT-GOV-004",
+  "note": "An unfilled role reads 'Not appointed' and never appears as an approval (spec section 2). Certificates state the independence level.",
+  "independence_level": "Self-attested",
+  "roles": {
+    "Scientific authority": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    },
+    "Specification owner": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    },
+    "Release authority": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    },
+    "Reference implementation maintainer": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    },
+    "Automated verification executor": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    },
+    "Independent scientific reviewer": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    },
+    "Independent security reviewer": {
+      "holder": null,
+      "status": "Not appointed",
+      "appointed_on": null
+    }
+  },
+  "approvals": []
+}

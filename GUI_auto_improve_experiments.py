@@ -5037,9 +5037,17 @@ if __name__ == "__main__":
 
         if file_path:
             try:
-                # TODO: Implement proper result import logic
-                self._log(f"Imported results from: {Path(file_path).name}", "#27ae60")
-                messagebox.showinfo("Success", "Results imported successfully!")
+                from utils.results_io import load_results
+
+                loaded = load_results(file_path)
+                self.experiment_results.update(loaded)
+                self._log(
+                    f"Imported {len(loaded)} result set(s) from: {Path(file_path).name}",
+                    "#27ae60",
+                )
+                messagebox.showinfo(
+                    "Success", f"Imported {len(loaded)} result set(s) successfully!"
+                )
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to import results: {e}")
 
@@ -5064,11 +5072,12 @@ if __name__ == "__main__":
 
         if file_path:
             try:
-                import json
+                from utils.results_io import save_results
 
-                with open(file_path, "w") as f:
-                    json.dump(self.experiment_results, f, indent=2)
-                self._log(f"Saved results to: {Path(file_path).name}", "#27ae60")
+                fmt = save_results(file_path, self.experiment_results)
+                self._log(
+                    f"Saved results ({fmt}) to: {Path(file_path).name}", "#27ae60"
+                )
                 messagebox.showinfo("Success", "Results saved successfully!")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save results: {e}")
@@ -5091,9 +5100,13 @@ if __name__ == "__main__":
 
         if file_path:
             try:
+                from utils.results_io import export_report
+
                 report_content = self._generate_research_report()
-                Path(file_path).write_text(report_content)
-                self._log(f"Exported report to: {Path(file_path).name}", "#27ae60")
+                fmt = export_report(file_path, report_content)
+                self._log(
+                    f"Exported {fmt} report to: {Path(file_path).name}", "#27ae60"
+                )
                 messagebox.showinfo("Success", "Research report exported successfully!")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to export report: {e}")

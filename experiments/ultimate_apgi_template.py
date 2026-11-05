@@ -1,7 +1,7 @@
 """
 ULTIMATE APGI COMPLIANCE TEMPLATE
 ===================================
-This template defines the 100/100 APGI implementation standard.
+This template defines the internal APGI implementation checklist (not registered-protocol validation).
 All experiments should implement these components for full compliance.
 """
 
@@ -9,7 +9,7 @@ All experiments should implement these components for full compliance.
 # APGI COMPLIANCE CHECKLIST
 # =============================================================================
 
-# 1. FOUNDATIONAL EQUATIONS (Required for 100/100)
+# 1. FOUNDATIONAL EQUATIONS (Required by the internal checklist)
 #    - Prediction error: ε(t) = x(t) - x̂(t)
 #    - Precision: Π = 1/σ²
 #    - Z-score: z = (ε - μ) / σ
@@ -17,20 +17,20 @@ All experiments should implement these components for full compliance.
 #    - Effective interoceptive precision: Π^i_eff = Π^i_baseline · [1 + β·σ(M - M₀)]
 #    - Ignition probability: P(ignite) = σ(α(S - θ))
 
-# 2. DYNAMICAL SYSTEM EQUATIONS (Required for 100/100)
+# 2. DYNAMICAL SYSTEM EQUATIONS (Required by the internal checklist)
 #    - Signal dynamics: dS/dt = -τ_S⁻¹S + input + noise
 #    - Threshold dynamics: dθ/dt = (θ₀ - θ)/τ_θ + γ_M·M + λ·S + noise
 #    - Somatic marker dynamics: dM/dt = (tanh(β_M·ε^i) - M)/τ_M + noise
 #    - Arousal dynamics: dA/dt = (A_target - A)/τ_A + noise
 #    - Precision dynamics: dΠ/dt = α_Π(Π* - Π) + noise
 
-# 3. Π vs Π̂ DISTINCTION (Required for 100/100 - anxiety modeling)
+# 3. Π vs Π̂ DISTINCTION (Required by the internal checklist - anxiety modeling)
 #    - Pi_e_actual vs Pi_e_expected
 #    - Pi_i_actual vs Pi_i_expected
 #    - Precision expectation gap: Π̂ - Π
 #    - Anxiety index computation
 
-# 4. HIERARCHICAL 5-LEVEL PROCESSING (Required for 100/100)
+# 4. HIERARCHICAL 5-LEVEL PROCESSING (Required by the internal checklist)
 #    - Level 1: Fast sensory (50-100ms)
 #    - Level 2: Feature integration (100-200ms)
 #    - Level 3: Pattern recognition (200-500ms)
@@ -38,13 +38,13 @@ All experiments should implement these components for full compliance.
 #    - Level 5: Executive control (2-10s)
 #    - Cross-level coupling: Π_{ℓ-1} ← Π_{ℓ-1} · (1 + β_cross · B_ℓ)
 
-# 5. NEUROMODULATOR MAPPING (Required for 100/100)
+# 5. NEUROMODULATOR MAPPING (Required by the internal checklist)
 #    - ACh (Acetylcholine): ↑ Π^e (exteroceptive precision)
 #    - NE (Norepinephrine): ↑ θ (threshold), ↑ gain
 #    - DA (Dopamine): Action precision, reward prediction
 #    - 5-HT (Serotonin): ↑ Π^i, ↓ β_som
 
-# 6. DOMAIN-SPECIFIC THRESHOLDS (Required for 100/100)
+# 6. DOMAIN-SPECIFIC THRESHOLDS (Required by the internal checklist)
 #    - theta_survival: Lower threshold for survival-relevant (0.1-0.5)
 #    - theta_neutral: Higher threshold for neutral content (0.5-1.5)
 #    - Content domain tagging per trial
@@ -54,7 +54,7 @@ All experiments should implement these components for full compliance.
 #    - MDD_profile: Major Depressive Disorder markers
 #    - Psychosis_profile: Psychosis spectrum markers
 
-# 8. RUNNING STATISTICS (Required for 100/100)
+# 8. RUNNING STATISTICS (Required by the internal checklist)
 #    - Exponential moving average for mean: dμ/dt = α_μ(x - μ)
 #    - Exponential moving average for variance: dσ²/dt = α_σ((x-μ)² - σ²)
 #    - Z-score normalization per trial
@@ -84,7 +84,7 @@ from apgi_integration import APGIParameters
 
 @dataclass
 class UltimateAPGIParameters(APGIParameters):
-    """Complete APGI parameters for 100/100 compliance."""
+    """Complete APGI parameters for the internal APGI checklist."""
 
     # ========== TIMESCALES ==========
     tau_S: float = 0.35  # Surprise decay (200-500 ms)
@@ -193,7 +193,7 @@ class UltimateAPGIParameters(APGIParameters):
 
 
 # =============================================================================
-# HIERARCHICAL 5-LEVEL STATE (100/100 Standard)
+# HIERARCHICAL 5-LEVEL STATE (internal checklist)
 # =============================================================================
 
 
@@ -212,7 +212,7 @@ class HierarchicalLevel:
 
 
 class HierarchicalProcessor:
-    """5-level hierarchical processing for 100/100 compliance."""
+    """5-level hierarchical processing for the internal APGI checklist."""
 
     def __init__(self, params: UltimateAPGIParameters):
         self.params = params
@@ -260,7 +260,7 @@ class HierarchicalProcessor:
 
 
 # =============================================================================
-# PRECISION EXPECTATION GAP (Π vs Π̂) (100/100 Standard)
+# PRECISION EXPECTATION GAP (Π vs Π̂) (internal checklist)
 # =============================================================================
 
 
@@ -320,12 +320,12 @@ class PrecisionExpectationState:
 
 
 # =============================================================================
-# COMPLETE APGI RUNNER TEMPLATE (100/100 Standard)
+# COMPLETE APGI RUNNER TEMPLATE (internal checklist)
 # =============================================================================
 
 
 class UltimateAPGIRunner:
-    """Ultimate APGI runner achieving 100/100 compliance."""
+    """Ultimate APGI runner implementing the internal APGI checklist."""
 
     def __init__(
         self,
@@ -343,7 +343,7 @@ class UltimateAPGIRunner:
         self.apgi = APGIIntegration(self.params)
         self.dynamics = DynamicalSystem(self.params)
 
-        # 100/100 components
+        # checklist components
         self.hierarchical: Optional[HierarchicalProcessor] = (
             HierarchicalProcessor(self.params) if enable_hierarchical else None
         )
@@ -373,7 +373,7 @@ class UltimateAPGIRunner:
         rt_ms: Optional[float] = None,
         confidence: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """Process trial with 100/100 APGI compliance."""
+        """Process trial with internal APGI feature checklist."""
 
         # 1. Compute prediction errors
         error_ext = observed - predicted
@@ -433,7 +433,7 @@ class UltimateAPGIRunner:
             # Domain
             "trial_type": trial_type,
             "effective_threshold": effective_theta,
-            # 100/100 additions
+            # checklist additions
             "precision_mismatch": getattr(
                 self.precision_gap, "precision_mismatch", 0.0
             ),
@@ -450,10 +450,10 @@ class UltimateAPGIRunner:
         return metrics
 
     def get_ultimate_summary(self) -> Dict[str, Any]:
-        """Get comprehensive APGI summary for 100/100 compliance."""
+        """Get comprehensive APGI summary for the internal APGI checklist."""
         base_summary = self.apgi.dynamics.get_summary()
 
-        # Add 100/100 specific metrics
+        # Add checklist-specific metrics
         ultimate_summary = {
             **base_summary,
             # Precision expectation gap

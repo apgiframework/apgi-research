@@ -25,9 +25,14 @@ def mutated(docs, filename_prefix, edit):
     return out
 
 
-@pytest.mark.parametrize("gate", sorted(gates.GATES))
+@pytest.mark.parametrize("gate", sorted(set(gates.GATES) - gates.RELEASE_ONLY))
 def test_release_passes_every_gate(docs, gate):
     assert gates.GATES[gate](docs) == []
+
+
+def test_release_only_gate_fails_until_real_content_exists(docs):
+    # Zero-item bank and no three-form stimulus bank must not pass acceptance.
+    assert gates.GATES["acceptance-coverage"](docs)
 
 
 def test_main_exit_codes(capsys):

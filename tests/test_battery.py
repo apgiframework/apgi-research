@@ -58,6 +58,20 @@ class TestPsychometric:
         with pytest.raises(ValueError):
             psychometric.fit_psychometric([0.1, 0.2], [6, 2], [5, 5])
 
+    @pytest.mark.parametrize(
+        "c,k,n",
+        [
+            ([0.1, 0.2, float("nan")], [1, 2, 3], [5, 5, 5]),
+            ([0.1, 0.2, 0.3], [-1, 2, 3], [5, 5, 5]),
+            ([0.1, 0.2, 0.3], [1, 2, 3], [5, 5]),
+            ([0.1, 0.1, 0.1], [1, 2, 3], [5, 5, 5]),
+            ([0.1, 0.2, 0.3], [1.5, 2, 3], [5, 5, 5]),
+        ],
+    )
+    def test_invalid_input_rejected_atomically(self, c, k, n):
+        with pytest.raises(ValueError):
+            psychometric.fit_psychometric(c, k, n)
+
     def test_confidence_function(self):
         c = np.logspace(-2, 0, 7)
         y = 1 + 4 / (1 + np.exp(-(np.log10(c) + 1.3) / 0.2))
@@ -141,10 +155,20 @@ class TestReversal:
 class TestTiers:
     def test_tiers(self):
         assert tiers.assign_tier(
-            {"timing_errors_ms": [1, 2, 3], "fullscreen": True}
+            {
+                "timing_errors_ms": [1, 2, 3],
+                "dropped_frame_fraction": 0.0,
+                "fullscreen": True,
+            }
         ) == ("A", [])
         assert (
-            tiers.assign_tier({"timing_errors_ms": [12] * 5, "fullscreen": True})[0]
+            tiers.assign_tier(
+                {
+                    "timing_errors_ms": [12] * 5,
+                    "dropped_frame_fraction": 0.0,
+                    "fullscreen": True,
+                }
+            )[0]
             == "B"
         )
         assert tiers.assign_tier({"is_mobile": True, "fullscreen": True})[0] == "C"
@@ -155,6 +179,18 @@ class TestTiers:
             tiers.assign_tier({"failed_attention_checks": 2, "fullscreen": True})[0]
             == "C"
         )
+
+    def test_missing_measurements_are_quarantined_not_tier_a(self):
+        tier, reasons = tiers.assign_tier({"fullscreen": True})
+        assert tier == "C" and "missing_timing_measurements" in reasons
+        tier, reasons = tiers.assign_tier(
+            {"timing_errors_ms": [1, float("nan")], "dropped_frame_fraction": 0.0}
+        )
+        assert tier == "C" and "nonfinite_timing_measurements" in reasons
+        tier, reasons = tiers.assign_tier(
+            {"timing_errors_ms": [1, 2], "dropped_frame_fraction": 1.5}
+        )
+        assert tier == "C" and "invalid_dropped_frame_fraction" in reasons
 
     def test_version_is_stamped_and_matches_api(self):
         assert tiers.TIER_CONFIG["version"] == "tier_config-1.0.0"

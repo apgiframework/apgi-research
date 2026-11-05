@@ -8,6 +8,8 @@ protocol documents, so a mutation test can prove it actually fails:
   timing-contracts      windows are ordered and fall on whole samples
   parallel-form-balance declared counterbalancing can be realised with equal cells
   item-bank             item bank passes the content linter; reliability targets stay frozen
+  construct-bridge      every battery task has a complete construct-to-task bridge row
+  acceptance-coverage   RELEASE ONLY: real reviewed items and a real matched three-form bank exist
 
 Usage: python scripts/ci_gates.py [--gate NAME ...]   (exit 1 on any failure)
 """
@@ -300,22 +302,94 @@ def item_bank_errors(documents=None, bank=None, folder=None):
     return errors
 
 
+MIN_RELEASE_ITEMS = 30
+MIN_ITEMS_PER_SUBSCALE = 4
+
+
+def construct_bridge_errors(documents=None, bridge=None):
+    """S3-BAT-05: bridge rows complete, and every task named in a row is either
+    cleared or explicitly gated."""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from battery import bridge as _bridge
+
+    b = bridge if bridge is not None else _bridge.load_bridge()
+    return _bridge.bridge_errors(b)
+
+
+def acceptance_coverage_errors(documents=None, bank=None, forms_path=None):
+    """AUDIT-CI-002: a zero-item bank or invented stimuli must not pass release
+    acceptance. Requires a populated, linted item bank and a stored three-form
+    stimulus bank that is equal-sized and matched on difficulty."""
+    import json
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from battery import forms as _forms
+    from item_bank import lint
+
+    errors = []
+    b = bank if bank is not None else lint.load_bank()
+    items = b.get("items", [])
+    if len(items) < MIN_RELEASE_ITEMS:
+        errors.append(
+            f"item bank has {len(items)} items; release needs >= {MIN_RELEASE_ITEMS} reviewed items"
+        )
+    per = {}
+    for i in items:
+        per[i.get("subscale")] = per.get(i.get("subscale"), 0) + 1
+    for sub, n in sorted(per.items(), key=lambda kv: str(kv[0])):
+        if n < MIN_ITEMS_PER_SUBSCALE:
+            errors.append(f"subscale {sub}: {n} items < {MIN_ITEMS_PER_SUBSCALE}")
+    errors.extend(lint.lint_bank(b))
+    path = pathlib.Path(forms_path) if forms_path else ROOT / "battery" / "stimulus_forms.json"
+    if not path.is_file():
+        errors.append(f"{path.name}: three-form stimulus bank not found")
+        return errors
+    data = json.loads(path.read_text(encoding="utf-8"))
+    forms = data.get("forms", {})
+    if len(forms) != 3:
+        errors.append(f"stimulus_forms.json: needs exactly 3 forms, found {len(forms)}")
+        return errors
+    sizes = {k: len(v) for k, v in forms.items()}
+    if len(set(sizes.values())) != 1 or 0 in sizes.values():
+        errors.append(f"stimulus_forms.json: forms not equal-sized/non-empty: {sizes}")
+        return errors
+    rep = _forms.balance_report(list(forms.values()))
+    tol = data.get("max_mean_difference", 0.5)
+    if rep["max_mean_difference"] > tol:
+        errors.append(
+            f"stimulus_forms.json: form means differ by {rep['max_mean_difference']:.3f} > {tol}"
+        )
+    return errors
+
+
+# Gates that need real study content; they run in release acceptance, not on every push.
+RELEASE_ONLY = {"acceptance-coverage"}
+
 GATES = {
     "trial-sequencing": trial_sequencing_errors,
     "protocol-locking": protocol_locking_errors,
     "timing-contracts": timing_contract_errors,
     "parallel-form-balance": parallel_form_balance_errors,
     "item-bank": item_bank_errors,
+    "construct-bridge": construct_bridge_errors,
+    "acceptance-coverage": acceptance_coverage_errors,
 }
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--gate", action="append", choices=sorted(GATES))
+    parser.add_argument(
+        "--release", action="store_true", help="also run release-only gates"
+    )
     args = parser.parse_args(argv)
     documents = load_documents()
     failed = False
-    for name in args.gate or sorted(GATES):
+    default = sorted(g for g in GATES if args.release or g not in RELEASE_ONLY)
+    for name in args.gate or default:
         errors = GATES[name](documents)
         print(f"{'FAIL' if errors else 'OK  '} {name}")
         for e in errors:

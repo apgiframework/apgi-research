@@ -1,10 +1,12 @@
 # APGI Auto-Improvement System - Complete Usage Guide
 
+> **Scope of this document.** Scores and "100/100" figures below are an *internal feature checklist* (does the runner call the APGI components), not validation against the registered Protocol definitions, the Formal Mathematical Specification, or APGI-VAL-SPEC-1.2. See `governance/claim_register.json` (CLM-001).
+
 ## APGI Compliance Analysis Report
 
 ## Auto-Improvement Folder - Experiment Scripts Rating
 
-### 10-Point APGI Compliance Template (100/100 Standard)
+### 10-Point APGI Compliance Template (internal checklist; not validation)
 
 Based on `ultimate_apgi_template.py` and `APGI_System.py`, full compliance requires:
 
@@ -161,7 +163,7 @@ with manager.timeout(10.0, "Operation timed out"):
 
 ## Compliance Status
 
-**Current Status (April 2026):** All 30 experiment files now achieve **100/100 or higher** APGI compliance.
+**Current Status (April 2026):** All 30 experiment files now achieve **100/100 or higher** on the internal feature checklist.
 
  | File | Rating | Status |
 | ---------------------- | ------ | -------- |

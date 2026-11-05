@@ -166,3 +166,31 @@ class TestGate:
 def test_deepcopy_independence():
     b = bank(item())
     assert copy.deepcopy(b) == b
+
+
+class TestNewGates:
+    def test_construct_bridge_gate_passes_and_mutates(self):
+        assert gates.construct_bridge_errors() == []
+        bad = {"rows": [{"row_id": "x", "testable_v0_1": True}]}
+        assert gates.construct_bridge_errors(bridge=bad)
+
+    def test_acceptance_coverage_fails_on_empty_bank_and_missing_forms(self, tmp_path):
+        errs = gates.acceptance_coverage_errors(bank={"items": [], "block_order": []},
+                                                forms_path=tmp_path / "none.json")
+        assert any("0 items" in e for e in errs) and any("not found" in e for e in errs)
+
+    def test_acceptance_coverage_checks_form_balance(self, tmp_path):
+        import json as _json
+
+        f = tmp_path / "forms.json"
+        mk = lambda off: [{"id": f"s{i}{off}", "difficulty": i + off} for i in range(5)]
+        f.write_text(_json.dumps({"forms": {"A": mk(0), "B": mk(0), "C": mk(5)}}))
+        errs = gates.acceptance_coverage_errors(bank={"items": [], "block_order": []}, forms_path=f)
+        assert any("differ" in e for e in errs)
+        f.write_text(_json.dumps({"forms": {"A": mk(0), "B": mk(0)}}))
+        assert any("exactly 3" in x for x in gates.acceptance_coverage_errors(bank={"items": []}, forms_path=f))
+
+    def test_release_only_gate_not_in_default_run(self, capsys):
+        assert gates.main([]) == 0
+        assert "acceptance-coverage" not in capsys.readouterr().out
+        assert gates.main(["--release"]) == 1  # the bank is intentionally empty

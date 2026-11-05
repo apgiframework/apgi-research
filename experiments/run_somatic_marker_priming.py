@@ -104,7 +104,7 @@ class EnhancedSomaticMarkerRunner:
         self.hierarchical: Optional[HierarchicalProcessor] = None
         self.precision_gap: Optional[PrecisionExpectationState] = None
 
-        # Initialize 100/100 APGI components
+        # Initialize APGI components
         self.enable_apgi = enable_apgi and APGI_PARAMS.get("enabled", True)
         if self.enable_apgi:
             params = APGIParameters(
@@ -127,7 +127,7 @@ class EnhancedSomaticMarkerRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -153,13 +153,13 @@ class EnhancedSomaticMarkerRunner:
             else:
                 self.hierarchical = None
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators = {
                 "ACh": float(str(APGI_PARAMS.get("ACh", "1.0") or 1.0)),
                 "NE": float(str(APGI_PARAMS.get("NE", "1.0") or 1.0)),
@@ -167,7 +167,7 @@ class EnhancedSomaticMarkerRunner:
                 "HT5": float(str(APGI_PARAMS.get("HT5", "1.0") or 1.0)),
             }
 
-            # 100/100: Running statistics for z-score normalization
+            # APGI component: Running statistics for z-score normalization
             self.running_stats = {
                 "outcome_mean": 0.5,
                 "outcome_var": 0.25,
@@ -221,7 +221,7 @@ class EnhancedSomaticMarkerRunner:
             rt_ms=rt,
         )
 
-        # 100/100: Process with APGI if enabled
+        # APGI component: Process with APGI if enabled
         if self.apgi:
             # Compute prediction error from trial outcome
             observed_accuracy = 1.0 if correct else 0.0
@@ -230,7 +230,7 @@ class EnhancedSomaticMarkerRunner:
             # Determine trial type
             trial_type = "neutral"
 
-            # 100/100: Determine precision based on neuromodulators
+            # APGI component: Determine precision based on neuromodulators
             ach_boost = self.neuromodulators.get("ACh", 1.0)
             ne_effect = self.neuromodulators.get("NE", 1.0)
             da_effect = self.neuromodulators.get("DA", 1.0)
@@ -238,7 +238,7 @@ class EnhancedSomaticMarkerRunner:
             precision_ext = 1.5 * ach_boost * (1.0 + 0.2 * da_effect)
             precision_int = 1.5 * (1.0 + 0.2 * ne_effect)
 
-            # 100/100: Update running statistics
+            # APGI component: Update running statistics
             alpha_mu = 0.01
             alpha_sigma = 0.005
             self.running_stats["outcome_mean"] += alpha_mu * (
@@ -252,7 +252,7 @@ class EnhancedSomaticMarkerRunner:
                 0.01, self.running_stats["outcome_var"]
             )
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 self.precision_gap.update(
                     precision_ext, precision_int, self.neuromodulators, trial_type
@@ -260,7 +260,7 @@ class EnhancedSomaticMarkerRunner:
                 precision_ext = self.precision_gap.Pi_e_actual
                 precision_int = self.precision_gap.Pi_i_actual
 
-            # 100/100: Process with APGI
+            # APGI component: Process with APGI
             apgi_state = self.apgi.process_trial(
                 observed=observed_accuracy,
                 predicted=expected_accuracy,
@@ -269,7 +269,7 @@ class EnhancedSomaticMarkerRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Track APGI state
+            # APGI component: Track APGI state
             self.apgi_states.append(apgi_state)
             self.ignition_history.append(
                 float(apgi_state.get("ignition_prob", 0.0) or 0.0)
@@ -382,14 +382,14 @@ def print_results(results: Dict) -> None:
         print(f"Mean Somatic Marker: {results['apgi_mean_somatic_marker']:.3f}")
         print(f"Mean Threshold: {results['apgi_mean_threshold']:.3f}")
 
-        # 100/100: Precision expectation gap
+        # APGI component: Precision expectation gap
         if "apgi_precision_mismatch" in results:
             print(
                 f"Precision Mismatch (Π̂-Π): {results['apgi_precision_mismatch']:.3f}"
             )
             print(f"Anxiety Level: {results['apgi_anxiety_level']:.3f}")
 
-        # 100/100: Neuromodulators
+        # APGI component: Neuromodulators
         if "apgi_dopamine" in results:
             print("\nNeuromodulator Levels:")
             print(f"  Dopamine (DA): {results['apgi_dopamine']:.2f}")

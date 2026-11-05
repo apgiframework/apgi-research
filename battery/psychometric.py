@@ -30,10 +30,18 @@ def fit_psychometric(
     c = np.asarray(contrast, dtype=float)
     k = np.asarray(n_correct, dtype=float)
     n = np.asarray(n_trials, dtype=float)
+    if not (c.shape == k.shape == n.shape) or c.ndim != 1 or c.size < 3:
+        raise ValueError("need >= 3 matching 1-D contrast/count entries")
+    if not (np.all(np.isfinite(c)) and np.all(np.isfinite(k)) and np.all(np.isfinite(n))):
+        raise ValueError("non-finite contrast or count")
     if np.any(c <= 0):
         raise ValueError("contrast must be positive")
-    if np.any(k > n) or np.any(n <= 0):
+    if np.any(k < 0) or np.any(k > n) or np.any(n <= 0):
         raise ValueError("invalid trial counts")
+    if not (np.all(k == np.round(k)) and np.all(n == np.round(n))):
+        raise ValueError("counts must be integers")
+    if np.unique(c).size < 3:
+        raise ValueError("need >= 3 distinct contrast levels")
     x = np.log10(c)
 
     def nll(theta: np.ndarray) -> float:
@@ -45,6 +53,9 @@ def fit_psychometric(
 
     best = minimize(nll, x0=[float(np.median(x)), np.log(0.2)], method="Nelder-Mead")
     mu, sigma = float(best.x[0]), float(np.exp(best.x[1]))
+    if not best.success or not all(np.isfinite([mu, sigma, best.fun])):
+        # Never return a NaN/unconverged fit as a scientific result (APGI-DAT-001).
+        raise ArithmeticError(f"psychometric fit did not converge: {best.message}")
     return {
         "threshold": 10**mu,
         "log10_threshold": mu,
@@ -59,6 +70,8 @@ def fit_confidence_function(
     """Logistic fit of mean confidence (rescaled 0-1) against log10 contrast."""
     c = np.log10(np.asarray(contrast, dtype=float))
     y = np.asarray(mean_confidence, dtype=float)
+    if not (np.all(np.isfinite(c)) and np.all(np.isfinite(y))):
+        raise ValueError("non-finite contrast or confidence")
     lo, hi = float(y.min()), float(y.max())
     if hi == lo:
         raise ValueError("confidence does not vary with contrast")

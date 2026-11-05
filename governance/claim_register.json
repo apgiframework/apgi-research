@@ -1,0 +1,55 @@
+{
+  "record_version": "1.0.0",
+  "requirement": "APGI-SCI-007 / AUDIT-GOV-003",
+  "status": "STARTER_PENDING_SCIENTIFIC_AUTHORITY_REVIEW",
+  "note": "Claims here are statements this repository itself makes. Epistemic status values: implementation_fact | simulation_only | registered_prediction | not_claimed. No theory claim is asserted as established.",
+  "claims": [
+    {
+      "id": "CLM-001",
+      "statement": "Experiment runners pass an internal APGI feature checklist.",
+      "epistemic_status": "implementation_fact",
+      "scope": "internal checklist only; not validation against registered protocols or APGI-VAL-SPEC-1.2",
+      "sources": [
+        "docs/Maturity-Matrix.md",
+        "docs/APGI-USAGE-GUIDE.md",
+        "experiments/*.py"
+      ]
+    },
+    {
+      "id": "CLM-002",
+      "statement": "The 29 paradigm experiments are simulations, not the registered Protocol 0-7 studies.",
+      "epistemic_status": "simulation_only",
+      "sources": [
+        "README.md"
+      ]
+    },
+    {
+      "id": "CLM-003",
+      "statement": "Bundled protocol files match the SHA-256 lock at runtime before use.",
+      "epistemic_status": "implementation_fact",
+      "sources": [
+        "utils/apgi_protocol_spec.py",
+        "tests/test_protocol_spec_v1_1.py"
+      ]
+    },
+    {
+      "id": "CLM-004",
+      "statement": "Battery analysis helpers (SDT, psychometric, reversal, meta-d', masking) compute the stated indices.",
+      "epistemic_status": "implementation_fact",
+      "scope": "software correctness on synthetic data; no human-data validity claim",
+      "sources": [
+        "battery/",
+        "tests/test_battery*.py"
+      ]
+    },
+    {
+      "id": "CLM-005",
+      "statement": "Reliability targets (omega>=0.80, ICC(2,1)>=0.70, |r|>=0.15) are frozen before collection.",
+      "epistemic_status": "registered_prediction",
+      "scope": "targets, not observations",
+      "sources": [
+        "item_bank/reliability_targets.json"
+      ]
+    }
+  ]
+}

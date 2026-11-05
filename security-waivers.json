@@ -1,0 +1,4 @@
+{
+  "note": "Time-boxed exceptions for security findings. Each needs id (finding id or rule id), owner, reason, expires (ISO date). Expired or incomplete waivers fail scripts/security_gate.py.",
+  "waivers": []
+}

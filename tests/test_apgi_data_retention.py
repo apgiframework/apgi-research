@@ -225,8 +225,12 @@ class TestDeletionExecutor:
             data_path=None,
         )
 
-        assert result is True  # nosec: B101 - Test assertion
+        # No path means nothing was deleted: must not report success (APGI-DAT-003).
+        assert result is False  # nosec: B101 - Test assertion
         mock_audit_sink.record_event.assert_called_once()
+        assert (
+            mock_audit_sink.record_event.call_args[1]["status"] == "failure"
+        )  # nosec: B101
 
     def test_delete_experiment_data_failure(self, executor, mock_audit_sink, tmp_path):
         """Test failed experiment data deletion."""
@@ -302,8 +306,8 @@ class TestDeletionExecutor:
             kms_callback=None,
         )
 
-        assert result is True  # nosec: B101 - Test assertion
-        mock_audit_sink.record_event.assert_called_once()
+        # No callback means no key was destroyed: must not report success (APGI-CON-002).
+        assert result is False  # nosec: B101 - Test assertion
 
     def test_destroy_kms_key_exception(self, executor, mock_audit_sink):
         """Test KMS key destruction with exception."""
@@ -450,7 +454,9 @@ class TestRetentionJobScheduler:
             subject_id="sub_001",
             subject_name="Test User",
             data_categories=["experiment", "config", "kms_key"],
+            data_paths={"experiment": ["/virtual/exp.npy"]},
         )
+        scheduler.kms_callback = lambda key_id: True
 
         with patch.object(
             scheduler.deletion_executor, "delete_experiment_data", return_value=True
