@@ -23,8 +23,9 @@ ITEM_KEYS = {
     "response_type",
     "options",
     "source",
+    "reverse_keyed",
 }
-REQUIRED_KEYS = ITEM_KEYS - {"source"}
+REQUIRED_KEYS = ITEM_KEYS - {"source", "reverse_keyed"}
 
 # S1-L1-15: exclusion rests on diagnostic function, not licence.
 DIAGNOSTIC_INSTRUMENTS = json.loads(
@@ -76,6 +77,8 @@ def lint_item(item: dict[str, Any]) -> list[str]:
         errors.append(
             f"{ident}: options must be exactly the fixed 5-point agreement labels"
         )
+    if "reverse_keyed" in item and not isinstance(item["reverse_keyed"], bool):
+        errors.append(f"{ident}: reverse_keyed must be a boolean")
     text = str(item.get("text", ""))
     if not text.strip():
         errors.append(f"{ident}: empty text")
@@ -104,6 +107,8 @@ def lint_bank(bank: dict[str, Any]) -> list[str]:
     order = bank.get("block_order", [])
     if len(set(order)) != len(order):
         errors.append("block_order contains duplicates")
+    if items and not str(bank.get("scoring_version", "")).strip():
+        errors.append("scoring_version is required for a populated bank")
     ids = [i.get("item_id") for i in items]
     if len(set(ids)) != len(ids):
         errors.append("duplicate item_id")

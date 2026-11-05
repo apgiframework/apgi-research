@@ -198,16 +198,18 @@ class TestReleaseMetadata:
         )
 
     def test_project_name_is_unified(self):
-        legacy = re.compile(
-            r"Autonomous Program Generation|Autonomous Psychological General|"
-            r"Autonomous Personal Growth|Active Perception and Generative|"
-            r"Active Predictive Global Ignition"
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "governance_tool", ROOT / "scripts" / "governance.py"
         )
+        gov = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gov)
+        legacy = re.compile("|".join(gov.NON_CANONICAL), re.I)
         for path in [
             *ROOT.glob("*.py"),
             *ROOT.glob("*.md"),
             *(ROOT / "docs").glob("*.md"),
             *(ROOT / "experiments").glob("*.py"),
         ]:
-            if path.name != "CHANGELOG.md":  # records the old names
-                assert not legacy.search(path.read_text(encoding="utf-8")), path
+            assert not legacy.search(path.read_text(encoding="utf-8")), path

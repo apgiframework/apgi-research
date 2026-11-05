@@ -235,7 +235,7 @@ class EnhancedAttentionalBlinkRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -266,13 +266,13 @@ class EnhancedAttentionalBlinkRunner:
             else:
                 self.hierarchical = None  # type: ignore[assignment]
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None  # type: ignore[assignment]
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators = {
                 "ACh": float(
                     cast(Union[str, int, float], APGI_PARAMS.get("ACh", "1.0") or 1.0)
@@ -355,7 +355,7 @@ class EnhancedAttentionalBlinkRunner:
             # Trial type affects precision - attentional blink is high-demand
             trial_type = "survival" if config.lag in [2, 3] else "neutral"
 
-            # 100/100: Determine precision based on trial type and neuromodulators
+            # APGI component: Determine precision based on trial type and neuromodulators
             # ACh increases attention precision for RSVP tasks
             ach_boost = float(
                 self.neuromodulators.get("ACh", 1.0) if self.neuromodulators else 1.0
@@ -374,7 +374,7 @@ class EnhancedAttentionalBlinkRunner:
                 1.5 if t2_correct else 1.0
             )  # Correct detection increases precision
 
-            # 100/100: Update running statistics for z-score normalization
+            # APGI component: Update running statistics for z-score normalization
             alpha_mu = 0.01
             alpha_sigma = 0.005
 
@@ -398,7 +398,7 @@ class EnhancedAttentionalBlinkRunner:
                 0.01, self.running_stats["outcome_var"]
             )
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 nm_floats = {
                     k: float(v)
@@ -411,7 +411,7 @@ class EnhancedAttentionalBlinkRunner:
                 precision_ext = self.precision_gap.Pi_e_actual
                 precision_int = self.precision_gap.Pi_i_actual
 
-            # 100/100: Process with APGI - computes ignition, surprise, somatic markers
+            # APGI component: Process with APGI - computes ignition, surprise, somatic markers
             apgi_state = self.apgi.process_trial(
                 observed=observed_accuracy,
                 predicted=expected_accuracy,
@@ -420,7 +420,7 @@ class EnhancedAttentionalBlinkRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):
@@ -453,7 +453,7 @@ class EnhancedAttentionalBlinkRunner:
             )
             results["apgi_mean_threshold"] = apgi_summary.get("mean_threshold", 0.0)
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 results["apgi_precision_mismatch"] = (
                     self.precision_gap.precision_mismatch
@@ -463,12 +463,12 @@ class EnhancedAttentionalBlinkRunner:
                     self.precision_gap.precision_overestimated
                 )
 
-            # 100/100: Hierarchical processing
+            # APGI component: Hierarchical processing
             if self.hierarchical:
                 hier_summary = self.hierarchical.get_hierarchical_summary()
                 results.update({f"apgi_{k}": v for k, v in hier_summary.items()})
 
-            # 100/100: Neuromodulator baselines
+            # APGI component: Neuromodulator baselines
             if self.neuromodulators:
                 results["apgi_acetylcholine"] = self.neuromodulators.get("ACh", 1.0)
                 results["apgi_norepinephrine"] = self.neuromodulators.get("NE", 1.0)

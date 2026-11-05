@@ -1,0 +1,152 @@
+{
+  "record_version": "1.0.0",
+  "requirement": "APGI-SCI-005",
+  "status": "pending_scientific_authority_classification",
+  "note": "Every APGIParameters default must be labelled derived | calibrated | assumed with a source. None has been classified yet; 'unclassified' defaults MUST NOT be used in a confirmatory fit. A default outside its registered range is flagged.",
+  "fields": {
+    "tau_S": {
+      "default": 0.35,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "tau_theta": {
+      "default": 30.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "theta_0": {
+      "default": 0.5,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified",
+      "registered_quantity": "theta_0",
+      "registered_range": [
+        0.25,
+        0.85
+      ],
+      "inside_registered_range": true
+    },
+    "alpha": {
+      "default": 5.5,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified",
+      "registered_quantity": "gamma_sig",
+      "registered_range": [
+        2,
+        7.5
+      ],
+      "inside_registered_range": true
+    },
+    "gamma_M": {
+      "default": -0.3,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "gamma_A": {
+      "default": 0.1,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "M_0": {
+      "default": 0.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "A_0": {
+      "default": 0.5,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "beta": {
+      "default": 1.5,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_outside_registered_range",
+      "registered_quantity": "beta_SM",
+      "registered_range": [
+        0.3,
+        0.7
+      ],
+      "inside_registered_range": false
+    },
+    "rho": {
+      "default": 0.7,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "sigma_S": {
+      "default": 0.05,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "sigma_theta": {
+      "default": 0.02,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "precision_expectation_gap": {
+      "default": 0.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "theta_survival": {
+      "default": 0.3,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "theta_neutral": {
+      "default": 0.7,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "ACh": {
+      "default": 1.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "NE": {
+      "default": 1.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "DA": {
+      "default": 1.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "HT5": {
+      "default": 1.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "HEP_amplitude": {
+      "default": 0.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    },
+    "P3b_latency": {
+      "default": 0.0,
+      "provenance": "unclassified",
+      "source": null,
+      "confirmatory_use": "blocked_until_classified"
+    }
+  }
+}

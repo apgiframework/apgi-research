@@ -315,7 +315,7 @@ def map_to_reaction_time(S: float, theta: float) -> float:
 @dataclass
 class HierarchicalLevel:
     """
-    Single hierarchical level state (100/100 APGI Standard).
+    Single hierarchical level state (internal APGI checklist).
 
     Levels:
         1: Fast sensory (50-100ms)

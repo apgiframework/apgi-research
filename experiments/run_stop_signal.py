@@ -100,7 +100,7 @@ class EnhancedStopSignalRunner:
         self.participant = SimulatedParticipant()
         self.start_time = None
 
-        # Initialize 100/100 APGI components
+        # Initialize APGI components
         self.enable_apgi = enable_apgi and APGI_PARAMS.get("enabled", True)
         if self.enable_apgi:
             params = APGIParameters(
@@ -125,7 +125,7 @@ class EnhancedStopSignalRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -150,13 +150,13 @@ class EnhancedStopSignalRunner:
             else:
                 self.hierarchical = None
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators = {
                 "ACh": float(cast(float, APGI_PARAMS.get("ACh", 1.0))),
                 "NE": float(cast(float, APGI_PARAMS.get("NE", 1.0))),
@@ -164,7 +164,7 @@ class EnhancedStopSignalRunner:
                 "HT5": float(cast(float, APGI_PARAMS.get("HT5", 1.0))),
             }
 
-            # 100/100: Running statistics for z-score normalization
+            # APGI component: Running statistics for z-score normalization
             self.running_stats = {
                 "outcome_mean": 0.5,
                 "outcome_var": 0.25,
@@ -204,7 +204,7 @@ class EnhancedStopSignalRunner:
             rt_ms=rt,
         )
 
-        # 100/100: Process with APGI if enabled
+        # APGI component: Process with APGI if enabled
         if self.apgi:
             # Compute prediction error from trial outcome
             observed_accuracy = 1.0 if responded else 0.0
@@ -213,7 +213,7 @@ class EnhancedStopSignalRunner:
             # Determine trial type
             trial_type = "neutral"
 
-            # 100/100: Determine precision based on neuromodulators
+            # APGI component: Determine precision based on neuromodulators
             ach_boost = (
                 self.neuromodulators.get("ACh", 1.0) if self.neuromodulators else 1.0
             )
@@ -227,7 +227,7 @@ class EnhancedStopSignalRunner:
             precision_ext = 1.5 * ach_boost * (1.0 + 0.2 * da_effect)
             precision_int = 1.5 * (1.0 + 0.2 * ne_effect)
 
-            # 100/100: Update running statistics
+            # APGI component: Update running statistics
             if self.running_stats:
                 alpha_mu = 0.01
                 alpha_sigma = 0.005
@@ -242,7 +242,7 @@ class EnhancedStopSignalRunner:
                     0.01, self.running_stats["outcome_var"]
                 )
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 self.precision_gap.update(
                     precision_ext, precision_int, self.neuromodulators or {}, trial_type
@@ -250,7 +250,7 @@ class EnhancedStopSignalRunner:
                 precision_ext = self.precision_gap.Pi_e_actual
                 precision_int = self.precision_gap.Pi_i_actual
 
-            # 100/100: Process with APGI
+            # APGI component: Process with APGI
             apgi_state = self.apgi.process_trial(
                 observed=observed_accuracy,
                 predicted=expected_accuracy,
@@ -259,7 +259,7 @@ class EnhancedStopSignalRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):

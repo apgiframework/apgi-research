@@ -1,0 +1,1501 @@
+{
+ "source_rows": 142,
+ "counts": {
+  "PARTIAL": 67,
+  "IMPLEMENTED": 35,
+  "EXTERNAL_BLOCKED": 31,
+  "DECISION_REQUIRED": 9
+ },
+ "tasks": [
+  {
+   "task_id": "S1-L1-05",
+   "task": "Use 5-point agreement scale, not sliders",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "item_bank/lint.py",
+    "item_bank/scoring.py",
+    "tests/test_item_bank.py",
+    "tests/test_item_scoring.py"
+   ],
+   "residual": "candidates.json is intentionally empty; reviewed five-point stems and a scoring version are required (acceptance-coverage gate fails until then)."
+  },
+  {
+   "task_id": "S1-L1-06",
+   "task": "Randomise within blocks; fix block order",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "item_bank/render.py",
+    "tests/test_item_bank.py"
+   ],
+   "residual": "Mechanism verified; applies to the bank once populated."
+  },
+  {
+   "task_id": "S1-L1-10.1",
+   "task": "Strip printed parameter labels from options ('Low ε', 'High ε')",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "item_bank/lint.py",
+    "tests/test_item_bank.py"
+   ],
+   "residual": "Mechanism verified; applies to the bank once populated."
+  },
+  {
+   "task_id": "S1-L1-15",
+   "task": "Exclude diagnostic instruments (STAI, BDI-II, PHQ-9 and similar)",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "item_bank/exclusion_record.json",
+    "item_bank/lint.py"
+   ],
+   "residual": "Exclusion list needs clinical-governance sign-off."
+  },
+  {
+   "task_id": "S1-L1-16",
+   "task": "Ban sensitive content and free-text fields from the item bank",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "item_bank/lint.py"
+   ],
+   "residual": "Banned-topic list needs content-review sign-off."
+  },
+  {
+   "task_id": "S1-L1-17",
+   "task": "Set reliability targets before collection",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "item_bank/reliability_targets.json",
+    "item_bank/reliability_targets.sha256",
+    "item_bank/scoring.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Targets frozen and hash-gated; observed reliability needs pilot data and a registered amendment path."
+  },
+  {
+   "task_id": "S2-ING-02",
+   "task": "Reliable session journal",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/session_journal.py",
+    "tests/test_session_journal.py"
+   ],
+   "residual": "Journal + checkpoint-resume library done; API persistence and resume on every supported client are in other repositories."
+  },
+  {
+   "task_id": "S2-ING-02.3",
+   "task": "Resume sessions from journaled checkpoints",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/session_journal.py",
+    "tests/test_session_journal.py"
+   ],
+   "residual": "Journal + checkpoint-resume library done; API persistence and resume on every supported client are in other repositories."
+  },
+  {
+   "task_id": "S2-PR5-01",
+   "task": "End-to-end synthetic research test",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.1",
+   "task": "Integration step 1: Retrieve a registered protocol version",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_protocol_spec.py"
+   ],
+   "residual": "Lock-verified local protocol load done; retrieval from the API registry is external."
+  },
+  {
+   "task_id": "S2-PR5-01.2",
+   "task": "Integration step 2: Create a synthetic study and participant",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.3",
+   "task": "Integration step 3: Register test consents for all four purposes incl. one declined",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_consent.py",
+    "tests/test_governance_modules.py"
+   ],
+   "residual": "Four-purpose consent ledger with decline handling done; API-side registration is external."
+  },
+  {
+   "task_id": "S2-PR5-01.4",
+   "task": "Integration step 4: Start an experiment session",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.5",
+   "task": "Integration step 5: Execute deterministic behavioural trials",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.6",
+   "task": "Integration step 6: Produce simulated physiological signals",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.7",
+   "task": "Integration step 7: Upload trial events and signal chunks",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_provenance.py",
+    "battery/acquisition.py"
+   ],
+   "residual": "Checksum/integrity helpers done; upload and database verification need apgi-api."
+  },
+  {
+   "task_id": "S2-PR5-01.8",
+   "task": "Integration step 8: Verify database records and checksums",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_provenance.py",
+    "battery/acquisition.py"
+   ],
+   "residual": "Checksum/integrity helpers done; upload and database verification need apgi-api."
+  },
+  {
+   "task_id": "S2-PR5-01.9",
+   "task": "Integration step 9: Execute model scoring through the exposure gate",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.10",
+   "task": "Integration step 10: Run registered-method conformance checks",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.11",
+   "task": "Integration step 11: Verify data lineage",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.12",
+   "task": "Integration step 12: Request test deletion; confirm zero residual rows",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_data_retention.py",
+    "tests/test_apgi_data_retention_comprehensive.py"
+   ],
+   "residual": "Inventory-based deletion with zero-residual verification done locally; database/backups external."
+  },
+  {
+   "task_id": "S2-PR5-01.13",
+   "task": "Integration step 13: Produce integration report naming every repository commit",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-01.14",
+   "task": "Drive integration test from shared ODE generator (doubles as recovery check)",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S2-PR5-02",
+   "task": "Acceptance: same result regenerated within tolerance with full provenance",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Requires approved shared reference model (S1-REG-04), apgi-api and synthetic-generator access."
+  },
+  {
+   "task_id": "S3-BAT-01.1",
+   "task": "Build near-threshold visual detection task (3–4 min)",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/"
+   ],
+   "residual": "Analysis-side done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.1.1",
+   "task": "Calibrate contrast individually",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/staircase.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "3-down/1-up and QUEST reference implementations done; client port needed. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.1.2",
+   "task": "Collect present/absent response then confidence",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/sdt.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Server-side handling of present/absent + confidence trial vectors done (dprime_by_presence). Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.1.3",
+   "task": "Compute d′ = z(H) − z(FA) and c = −½[z(H) + z(FA)]",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/sdt.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "None for the formulae; task data come from the browser."
+  },
+  {
+   "task_id": "S3-BAT-01.1.4",
+   "task": "Model psychometric functions for performance and confidence",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/psychometric.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Inputs now validated; real fits need browser data."
+  },
+  {
+   "task_id": "S3-BAT-01.1.5",
+   "task": "Estimate hierarchical meta-d′ separately for present and absent",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/metad.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Per-session MLE meta-d' with present/absent split done; the registered hierarchical Bayesian fit needs a sampler (JAGS/Stan) and pooled data."
+  },
+  {
+   "task_id": "S3-BAT-01.2",
+   "task": "Build reversal-learning task (4 min)",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/"
+   ],
+   "residual": "Analysis-side done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.2.1",
+   "task": "Two options, probabilistic rewards, unannounced reversals",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/reversal_task.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Seeded schedule generator done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.2.2",
+   "task": "Estimate reward sensitivity, ± prediction-error learning, perseveration",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/reversal.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Estimators verified on synthetic data only."
+  },
+  {
+   "task_id": "S3-BAT-01.2.3",
+   "task": "Report precision_weighted_learning_composite only (α·Π product)",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/reversal.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Estimators verified on synthetic data only."
+  },
+  {
+   "task_id": "S3-BAT-01.3",
+   "task": "Build backward-masking task (3–4 min)",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/"
+   ],
+   "residual": "Analysis-side done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.3.1",
+   "task": "Lock every SOA to a whole number of frames",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/masking.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Decision-agnostic frame-lock / achieved-SOA / PAS / down-tier / summary helpers done; task gated on S3-DEC-01. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.3.2",
+   "task": "Log achieved SOA per trial",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/masking.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Decision-agnostic frame-lock / achieved-SOA / PAS / down-tier / summary helpers done; task gated on S3-DEC-01. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.3.3",
+   "task": "Collect per-trial 4-point Perceptual Awareness Scale",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/masking.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Decision-agnostic frame-lock / achieved-SOA / PAS / down-tier / summary helpers done; task gated on S3-DEC-01. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.3.4",
+   "task": "Down-tier sessions with dropped frames",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/masking.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Decision-agnostic frame-lock / achieved-SOA / PAS / down-tier / summary helpers done; task gated on S3-DEC-01. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.3.5",
+   "task": "Output accuracy by SOA, RT distribution, confidence, drift, reliability",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/masking.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Decision-agnostic frame-lock / achieved-SOA / PAS / down-tier / summary helpers done; task gated on S3-DEC-01. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.4",
+   "task": "Build calibration and quality checks (1–2 min)",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/calibration.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Calibration maths and attention-check scoring done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.4.1",
+   "task": "Measure FPS, display timing and screen size",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/calibration.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Calibration maths and attention-check scoring done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.4.2",
+   "task": "Card-against-screen pixels-per-mm calibration",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/calibration.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Calibration maths and attention-check scoring done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.4.3",
+   "task": "Blind-spot viewing-distance estimate (Li et al., 2020)",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/calibration.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Calibration maths and attention-check scoring done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.4.4",
+   "task": "Embed attention checks",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/calibration.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Calibration maths and attention-check scoring done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.5",
+   "task": "Log per-trial timing record",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/timing.py",
+    "battery/tiers.py"
+   ],
+   "residual": "Server-side record and visibility counting done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.5.1",
+   "task": "Use requestAnimationFrame and performance.now()",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/timing.py",
+    "battery/tiers.py"
+   ],
+   "residual": "Server-side record and visibility counting done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.5.2",
+   "task": "Enforce fullscreen, preload stimuli, schedule trials locally",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/timing.py",
+    "battery/tiers.py"
+   ],
+   "residual": "Server-side record and visibility counting done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.5.3",
+   "task": "Detect page visibility changes",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/timing.py",
+    "battery/tiers.py"
+   ],
+   "residual": "Server-side record and visibility counting done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-01.5.4",
+   "task": "Store callback time, refresh estimate and photodiode onset separately",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/timing.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Record keeps callback, refresh and photodiode fields separate."
+  },
+  {
+   "task_id": "S3-BAT-01.6",
+   "task": "Assign device quality tiers from versioned tier_config",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/tiers.py"
+   ],
+   "residual": "Version constant defined; storing it on every persisted session is an API/client change."
+  },
+  {
+   "task_id": "S3-BAT-01.6.1",
+   "task": "Tier A: stable frames, fullscreen, desktop/laptop, no tab loss → primary norms",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/tiers.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Missing measurements now quarantine to Tier C rather than defaulting to A."
+  },
+  {
+   "task_id": "S3-BAT-01.6.2",
+   "task": "Tier B: moderate timing noise → sensitivity analyses",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/tiers.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Missing measurements now quarantine to Tier C rather than defaulting to A."
+  },
+  {
+   "task_id": "S3-BAT-01.6.3",
+   "task": "Tier C: major jitter, mobile, tab switch, failed checks → exclude from norms",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/tiers.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Missing measurements now quarantine to Tier C rather than defaulting to A."
+  },
+  {
+   "task_id": "S3-BAT-01.6.4",
+   "task": "Keep per-session timing-error distribution, not only the mean",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/tiers.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Missing measurements now quarantine to Tier C rather than defaulting to A."
+  },
+  {
+   "task_id": "S3-BAT-01.6.5",
+   "task": "Store tier_config_version on every session",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/tiers.py"
+   ],
+   "residual": "Version constant defined; storing it on every persisted session is an API/client change."
+  },
+  {
+   "task_id": "S3-BAT-01.8",
+   "task": "Report contrast thresholds as device-relative with tier/display covariates",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/psychometric.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "None."
+  },
+  {
+   "task_id": "S3-BAT-02",
+   "task": "Use backward masking instead of attentional blink",
+   "supplied_status": "Blocked",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [
+    "battery/masking.py"
+   ],
+   "residual": "Blocked on decision S3-DEC-01 (masking vs attentional blink)."
+  },
+  {
+   "task_id": "S3-BAT-03",
+   "task": "Build three matched parallel forms per task rotated by session index",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/forms.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Matched-split and rotation done; real stimuli absent so acceptance-coverage gate fails by design."
+  },
+  {
+   "task_id": "S3-BAT-04",
+   "task": "Counterbalance parallel-form order at enrolment",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/forms.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Williams-design assignment done; persisting the order at enrolment is an API change."
+  },
+  {
+   "task_id": "S3-BAT-05",
+   "task": "Complete construct-to-task bridge rows before tasks enter battery",
+   "supplied_status": "Not Started",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-05.1",
+   "task": "Bridge: Access threshold θₜ ↔ contrast at 50% detection; criterion c",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-05.2",
+   "task": "Bridge: Exteroceptive precision Πₑ ↔ slope; meta-d′/d′",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-05.3",
+   "task": "Bridge: Precision updating α·Π ↔ reversal composite; perseveration",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-05.4",
+   "task": "Bridge: Ignition ↔ accuracy-by-SOA; SOA-50; threshold-SOA visibility distributio",
+   "supplied_status": "Not Started",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-05.5",
+   "task": "Bridge: Interoceptive precision Πᵢ ↔ self-report only (not testable v0.1)",
+   "supplied_status": "Not Started",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-05.6",
+   "task": "Bridge: Somatic valuation β ↔ not measured v0.1",
+   "supplied_status": "Not Started",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/construct_bridge.json",
+    "battery/bridge.py",
+    "scripts/ci_gates.py"
+   ],
+   "residual": "Rows drafted and gated; scientific-authority review pending (status draft)."
+  },
+  {
+   "task_id": "S3-BAT-06",
+   "task": "Build order 1: detection and reversal tasks first, with logging and tiers",
+   "supplied_status": "Not Started",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/"
+   ],
+   "residual": "Reference analysis for detection and reversal done. Browser build lives in apgiframework.com (not in this checkout); needs a real-browser acceptance run."
+  },
+  {
+   "task_id": "S3-BAT-07",
+   "task": "Build order 2: minimal Layer 1 check-in (sleep, stress, confidence, visibility, stakes)",
+   "supplied_status": "Blocked",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [],
+   "residual": "Blocked on S1-L1-09 check-in design decision."
+  },
+  {
+   "task_id": "S3-SCR-01",
+   "task": "Effort, fraud and validity screening",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.1",
+   "task": "Flag impossibly fast responses (< ≈ 150 ms)",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.2",
+   "task": "Flag invariant responding (same key, zero confidence variance)",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.3",
+   "task": "Flag straight-lining and zig-zagging in questionnaires",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.4",
+   "task": "Exclude sessions with ≥ 2 failed attention checks from norms",
+   "supplied_status": "In Progress",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.5",
+   "task": "Flag duplicates via device fingerprint + email hash (flag, not block)",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.6",
+   "task": "Count one norm-contributing session per participant per battery version",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.7",
+   "task": "Screen bots at the form layer",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-SCR-01.8",
+   "task": "Report exclusion rates in the dataset card",
+   "supplied_status": "Blocked",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "battery/screening.py",
+    "tests/test_battery_extended.py"
+   ],
+   "residual": "Library verified; server/form-layer wiring and fingerprint capture are in other repositories."
+  },
+  {
+   "task_id": "S3-PIL-06.1",
+   "task": "Measure completion rate",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs pilot authorization, IRB disposition and observed participant data; no synthetic figures may stand in."
+  },
+  {
+   "task_id": "S3-PIL-06.2",
+   "task": "Measure timing-failure rate",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs pilot authorization, IRB disposition and observed participant data; no synthetic figures may stand in."
+  },
+  {
+   "task_id": "S3-PIL-06.3",
+   "task": "Measure comprehension",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs pilot authorization, IRB disposition and observed participant data; no synthetic figures may stand in."
+  },
+  {
+   "task_id": "S3-PIL-06.4",
+   "task": "Measure reliability",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs pilot authorization, IRB disposition and observed participant data; no synthetic figures may stand in."
+  },
+  {
+   "task_id": "S3-PIL-08",
+   "task": "Replace attrition and usable-record estimates with pilot figures",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs pilot authorization, IRB disposition and observed participant data; no synthetic figures may stand in."
+  },
+  {
+   "task_id": "XC-CI-04",
+   "task": "CI gates: apgi-research",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    ".github/workflows/ci.yml",
+    "scripts/ci_gates.py",
+    "pytest-gates.ini"
+   ],
+   "residual": "Gates and mutation tests pass locally; a hosted run and required-check branch protection must be inspected on GitHub."
+  },
+  {
+   "task_id": "XC-CI-04.1",
+   "task": "CI gate (apgi-research): trial sequencing",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    ".github/workflows/ci.yml",
+    "scripts/ci_gates.py",
+    "pytest-gates.ini"
+   ],
+   "residual": "Gates and mutation tests pass locally; a hosted run and required-check branch protection must be inspected on GitHub."
+  },
+  {
+   "task_id": "XC-CI-04.2",
+   "task": "CI gate (apgi-research): protocol locking",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    ".github/workflows/ci.yml",
+    "scripts/ci_gates.py",
+    "pytest-gates.ini"
+   ],
+   "residual": "Gates and mutation tests pass locally; a hosted run and required-check branch protection must be inspected on GitHub."
+  },
+  {
+   "task_id": "XC-CI-04.3",
+   "task": "CI gate (apgi-research): timing contracts",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    ".github/workflows/ci.yml",
+    "scripts/ci_gates.py",
+    "pytest-gates.ini"
+   ],
+   "residual": "Gates and mutation tests pass locally; a hosted run and required-check branch protection must be inspected on GitHub."
+  },
+  {
+   "task_id": "XC-CI-04.4",
+   "task": "CI gate (apgi-research): parallel-form balance",
+   "supplied_status": "In Progress",
+   "disposition": "PARTIAL",
+   "evidence": [
+    ".github/workflows/ci.yml",
+    "scripts/ci_gates.py",
+    "pytest-gates.ini"
+   ],
+   "residual": "Gates and mutation tests pass locally; a hosted run and required-check branch protection must be inspected on GitHub."
+  },
+  {
+   "task_id": "S1-REG-04",
+   "task": "Define qualified reference model in mathematical-contracts.yaml",
+   "supplied_status": "In Progress",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [
+    "mathematical-contracts.yaml"
+   ],
+   "residual": "Draft only; scientific authority must approve the reference model."
+  },
+  {
+   "task_id": "S3-DEC-01",
+   "task": "Decide D5: Masking vs attentional blink",
+   "supplied_status": "Blocked",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [],
+   "residual": "Decision for the scientific authority."
+  },
+  {
+   "task_id": "S1-L1-09",
+   "task": "Design micro-check-in (45-90 s) with stable wording and time anchor",
+   "supplied_status": "Blocked",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [],
+   "residual": "Decision for the scientific authority."
+  },
+  {
+   "task_id": "S3-PIL-06",
+   "task": "Build order 3: run pilot (n=100-200)",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs pilot authorization, IRB disposition and observed participant data; no synthetic figures may stand in."
+  },
+  {
+   "task_id": "APGI-PRO-001",
+   "task": "Implement declared registered protocol definitions",
+   "supplied_status": "Open",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "utils/apgi_protocol_spec.py"
+   ],
+   "residual": "Needs approved v1.2/1.1.0 identity and per-definition implementation map."
+  },
+  {
+   "task_id": "APGI-PRO-002",
+   "task": "Reject invalid protocol/input state atomically",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/psychometric.py",
+    "battery/tiers.py",
+    "utils/apgi_protocol_spec.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Atomic rejection added for protocol lock, psychometric inputs and tiers; other entry points not audited."
+  },
+  {
+   "task_id": "APGI-PRO-003",
+   "task": "Preserve ordering, correlation, retries and idempotency",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/session_journal.py",
+    "tests/test_session_journal.py"
+   ],
+   "residual": "Ordering/idempotency/torn-write recovery verified for the journal; interface applicability profile pending."
+  },
+  {
+   "task_id": "APGI-PRO-004",
+   "task": "Declare supported protocol scope",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/validation_profile.json"
+   ],
+   "residual": "Draft profile written; approval pending."
+  },
+  {
+   "task_id": "APGI-SCI-001",
+   "task": "Match canonical ignition equation and strict boundary",
+   "supplied_status": "Open",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [
+    "governance/discrepancies.json"
+   ],
+   "residual": "DISC-001 recorded; code deliberately not changed until the scientific authority selects the canonical equation and golden vectors."
+  },
+  {
+   "task_id": "APGI-SCI-002",
+   "task": "Qualify declared model formulation and numerical fixtures",
+   "supplied_status": "Open",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [
+    "governance/discrepancies.json"
+   ],
+   "residual": "Needs approved formal specification, hierarchy ranges, notation appendix and fixtures."
+  },
+  {
+   "task_id": "APGI-SCI-003",
+   "task": "Use canonical L0-L4 temporal hierarchy",
+   "supplied_status": "Open",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [
+    "governance/discrepancies.json"
+   ],
+   "residual": "Needs approved formal specification, hierarchy ranges, notation appendix and fixtures."
+  },
+  {
+   "task_id": "APGI-SCI-004",
+   "task": "Map symbols to controlled notation",
+   "supplied_status": "Open",
+   "disposition": "DECISION_REQUIRED",
+   "evidence": [
+    "governance/discrepancies.json"
+   ],
+   "residual": "Needs approved formal specification, hierarchy ranges, notation appendix and fixtures."
+  },
+  {
+   "task_id": "APGI-SCI-005",
+   "task": "Label and source every parameter default",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/parameter_provenance.json",
+    "utils/apgi_deviation.py",
+    "tests/test_governance_modules.py"
+   ],
+   "residual": "Every default is inventoried and flagged; classification (derived/calibrated/assumed + source) needs the scientific authority."
+  },
+  {
+   "task_id": "APGI-SCI-006",
+   "task": "Use canonical APGI expansion everywhere",
+   "supplied_status": "Open",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "CHANGELOG.md",
+    "scripts/governance.py"
+   ],
+   "residual": "Non-canonical expansions removed; scan enforced by `governance.py check`."
+  },
+  {
+   "task_id": "APGI-SCI-007",
+   "task": "Trace visible science to classified claims",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/claim_register.json",
+    "scripts/governance.py"
+   ],
+   "residual": "Starter claim register and unsupported-claim scan; full statement-to-claim map needs scientific review."
+  },
+  {
+   "task_id": "APGI-REP-001",
+   "task": "Verify protocol lock before runtime use",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_protocol_spec.py",
+    "tests/test_protocol_spec_v1_1.py"
+   ],
+   "residual": "Runtime lock verification done; OpenTimestamps proof reference is external."
+  },
+  {
+   "task_id": "APGI-REP-002",
+   "task": "Record seeds and reproduce every stochastic path",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "APGI_System.py",
+    "tests/test_run_seed.py"
+   ],
+   "residual": "Single recorded seed through every stochastic path of APGI_System; other modules and cross-platform run comparison remain."
+  },
+  {
+   "task_id": "APGI-REP-003",
+   "task": "Independently reproduce power and sample sizes",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs approved assumptions/units inventory and independent calculation set."
+  },
+  {
+   "task_id": "APGI-REP-004",
+   "task": "Detect deviations and label exploratory outputs",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_deviation.py",
+    "tests/test_governance_modules.py"
+   ],
+   "residual": "Deviation detection and exploratory labelling done for parameters/analyses; export-time enforcement not wired into every runner."
+  },
+  {
+   "task_id": "APGI-REP-005",
+   "task": "Verify energy/power units and tolerances",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs approved assumptions/units inventory and independent calculation set."
+  },
+  {
+   "task_id": "APGI-IMP-001",
+   "task": "Reproduce controlled release identity and dependencies",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "scripts/governance.py"
+   ],
+   "residual": "Release-set manifest and SBOM generator done; dependency lock and reproducible-build demonstration pending."
+  },
+  {
+   "task_id": "APGI-IMP-002",
+   "task": "Enforce secure production configuration and secrets",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_authz.py",
+    "apgi_cli.py",
+    "tests/test_authz_hardening.py"
+   ],
+   "residual": "Fail-closed signing key and verified CLI identity done; production safety profile and secret scanning pending."
+  },
+  {
+   "task_id": "APGI-IMP-003",
+   "task": "Prove health, fault and audit observability",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs fault-induction runs under the declared operating profile."
+  },
+  {
+   "task_id": "APGI-DAT-001",
+   "task": "Validate deterministic processing and reconcile outcomes",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/psychometric.py",
+    "tests/test_battery.py"
+   ],
+   "residual": "Non-finite/unconverged results rejected; approved golden pipeline set pending."
+  },
+  {
+   "task_id": "APGI-DAT-002",
+   "task": "Quarantine and report invalid/unreconciled data",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/tiers.py",
+    "battery/screening.py",
+    "battery/acquisition.py"
+   ],
+   "residual": "Missing/non-finite measurements quarantined; end-to-end quarantine report workflow pending."
+  },
+  {
+   "task_id": "APGI-DAT-003",
+   "task": "Enforce per-class retention, deletion and recovery",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_data_retention.py",
+    "utils/apgi_compliance.py"
+   ],
+   "residual": "Fail-closed deletion with inventory done; per-class lifecycle and restore record need approval."
+  },
+  {
+   "task_id": "APGI-DAT-004",
+   "task": "Attach complete dataset provenance",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_provenance.py",
+    "tests/test_governance_modules.py"
+   ],
+   "residual": "Provenance record + checksum verification done; every dataset still needs inventorying."
+  },
+  {
+   "task_id": "APGI-API-001",
+   "task": "Publish and test versioned interface contracts",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs deployed interfaces / approved N/A decision / consumer-version records."
+  },
+  {
+   "task_id": "APGI-API-002",
+   "task": "Authenticate callers and enforce least privilege",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_authz.py",
+    "apgi_cli.py",
+    "tests/test_authz_hardening.py"
+   ],
+   "residual": "Token binds to supplied operator; CLI no longer trusts env role; object-level protection unproven."
+  },
+  {
+   "task_id": "APGI-API-003",
+   "task": "Protect sensitive data and enforce security scans",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs deployed interfaces / approved N/A decision / consumer-version records."
+  },
+  {
+   "task_id": "APGI-API-004",
+   "task": "Standardize errors and prove consumer compatibility",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs deployed interfaces / approved N/A decision / consumer-version records."
+  },
+  {
+   "task_id": "APGI-INT-001",
+   "task": "Pin canonical exchange schemas and version every payload",
+   "supplied_status": "Open",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs apgi-api, clients and approved model checked out."
+  },
+  {
+   "task_id": "APGI-INT-002",
+   "task": "Pass complete synthetic cross-application scenario",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs apgi-api, clients and approved model checked out."
+  },
+  {
+   "task_id": "APGI-INT-003",
+   "task": "Propagate upstream failures without silent defaults",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs apgi-api, clients and approved model checked out."
+  },
+  {
+   "task_id": "APGI-INT-004",
+   "task": "Match displayed values to upstream source",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs apgi-api, clients and approved model checked out."
+  },
+  {
+   "task_id": "APGI-REL-001",
+   "task": "Promote only approved immutable tested release",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "scripts/governance.py"
+   ],
+   "residual": "Certification refuses until evidence and approvals exist; no release candidate certified."
+  },
+  {
+   "task_id": "APGI-REL-002",
+   "task": "Ship executable deployment, rollback and monitoring",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_authz.py",
+    "docs/Operational-Playbooks.md"
+   ],
+   "residual": "emergency_lock now exists and playbook matches; deployment/rollback package pending."
+  },
+  {
+   "task_id": "APGI-REL-003",
+   "task": "Assess change impact and risk-based regression",
+   "supplied_status": "Blocked",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "scripts/governance.py"
+   ],
+   "residual": "`governance.py impact` maps changed files to requirements and regression tests; recorded approvals pending."
+  },
+  {
+   "task_id": "APGI-REL-004",
+   "task": "Publish tested release compatibility matrix",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "scripts/governance.py"
+   ],
+   "residual": "Compatibility record generated for this checkout only; multi-component tested matrix pending."
+  },
+  {
+   "task_id": "APGI-REL-005",
+   "task": "Certify exact bytes before archival deposit",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [],
+   "residual": "Needs certified release digests before any archival deposit."
+  },
+  {
+   "task_id": "APGI-CON-001",
+   "task": "Enforce participant consent scope on every operation",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_consent.py",
+    "tests/test_governance_modules.py"
+   ],
+   "residual": "Consent ledger with scope enforcement and zero persistence on decline done; binding into every ingest/export path of the other components pending."
+  },
+  {
+   "task_id": "APGI-CON-002",
+   "task": "Prove deletion across complete derived-data lineage",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_data_retention.py",
+    "tests/test_apgi_data_retention_comprehensive.py"
+   ],
+   "residual": "Inventory deletion + residual proof + KMS fail-closed done; backup policy [CONFIRM] pending."
+  },
+  {
+   "task_id": "APGI-ACQ-001",
+   "task": "Record acquisition integrity and detect injected faults",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "battery/acquisition.py",
+    "tests/test_governance_modules.py"
+   ],
+   "residual": "Checksum/drift/dropped-sample detection done; protocol-approved tolerances and hardware telemetry pending."
+  },
+  {
+   "task_id": "APGI-VAL-001",
+   "task": "Execute immutable registered validation decisions",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/apgi_protocol_spec.py",
+    "tests/test_protocol_spec_v1_1.py"
+   ],
+   "residual": "Conflicting/non-boolean evidence now raises; invoking pinned registered analyses with lineage pending."
+  },
+  {
+   "task_id": "APGI-CLI-001",
+   "task": "Validate client scoring, privacy, content and accessibility",
+   "supplied_status": "Blocked",
+   "disposition": "EXTERNAL_BLOCKED",
+   "evidence": [
+    "item_bank/scoring.py"
+   ],
+   "residual": "Needs populated instruments, independent scoring fixtures and an approved accessibility level."
+  },
+  {
+   "task_id": "AUDIT-GOV-001",
+   "task": "Approve validation profile and applicability",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/"
+   ],
+   "residual": "Draft records created (profile, claims, approvals, exceptions); approval and certification require the named authorities."
+  },
+  {
+   "task_id": "AUDIT-GOV-002",
+   "task": "Resolve draft specification and controlled source register",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/"
+   ],
+   "residual": "Draft records created (profile, claims, approvals, exceptions); approval and certification require the named authorities."
+  },
+  {
+   "task_id": "AUDIT-GOV-003",
+   "task": "Create bidirectional claim-to-release traceability and risk records",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/"
+   ],
+   "residual": "Draft records created (profile, claims, approvals, exceptions); approval and certification require the named authorities."
+  },
+  {
+   "task_id": "AUDIT-GOV-004",
+   "task": "Record authority appointments, reviews and approvals",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/"
+   ],
+   "residual": "Draft records created (profile, claims, approvals, exceptions); approval and certification require the named authorities."
+  },
+  {
+   "task_id": "AUDIT-GOV-005",
+   "task": "Establish release certificate, exceptions and archival control",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "governance/"
+   ],
+   "residual": "Draft records created (profile, claims, approvals, exceptions); approval and certification require the named authorities."
+  },
+  {
+   "task_id": "AUDIT-CI-001",
+   "task": "Make security scan findings enforce release gates",
+   "supplied_status": "Open",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    ".github/workflows/ci.yml",
+    "scripts/security_gate.py",
+    "tests/test_security_gate.py"
+   ],
+   "residual": "`|| true` removed; gate fails on unresolved high/critical or missing reports; needs a hosted run."
+  },
+  {
+   "task_id": "AUDIT-CI-002",
+   "task": "Require real item/form coverage in acceptance gates",
+   "supplied_status": "Open",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "scripts/ci_gates.py",
+    "tests/test_item_bank.py"
+   ],
+   "residual": "Release-only gate fails on zero items / missing or unbalanced three-form bank."
+  },
+  {
+   "task_id": "AUDIT-GUI-001",
+   "task": "Complete documented desktop data/configuration workflows",
+   "supplied_status": "Open",
+   "disposition": "PARTIAL",
+   "evidence": [
+    "utils/results_io.py",
+    "tests/test_results_io.py",
+    "GUI_auto_improve_experiments.py"
+   ],
+   "residual": "Import now loads data; CSV/HTML/PDF saves match their extension (headless-tested). Saved-settings application and XPR additional-constraint submission are not yet changed; native GUI run not performed."
+  },
+  {
+   "task_id": "AUDIT-OPS-001",
+   "task": "Verify operational runbook against actual APIs",
+   "supplied_status": "Open",
+   "disposition": "IMPLEMENTED",
+   "evidence": [
+    "utils/apgi_authz.py",
+    "docs/Operational-Playbooks.md",
+    "tests/test_authz_hardening.py"
+   ],
+   "residual": "emergency_lock/unlock implemented and playbook corrected."
+  }
+ ]
+}

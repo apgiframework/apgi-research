@@ -228,7 +228,7 @@ class EnhancedAIBenchmarkingRunner:
         self.ai_model = SimulatedAIModel()
         self.start_time: Optional[float] = None
 
-        # Initialize 100/100 APGI components
+        # Initialize APGI components
         self.enable_apgi = enable_apgi and APGI_PARAMS.get("enabled", True)
         if self.enable_apgi:
             params = APGIParameters(
@@ -295,7 +295,7 @@ class EnhancedAIBenchmarkingRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -328,13 +328,13 @@ class EnhancedAIBenchmarkingRunner:
             else:
                 self.hierarchical = None
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators = {
                 "ACh": (
                     cast(float, APGI_PARAMS.get("ACh", 1.0))
@@ -358,7 +358,7 @@ class EnhancedAIBenchmarkingRunner:
                 ),
             }
 
-            # 100/100: Running statistics for z-score normalization
+            # APGI component: Running statistics for z-score normalization
             self.running_statistics = {
                 "outcome_mean": 0.5,
                 "outcome_var": 0.25,
@@ -538,14 +538,14 @@ def print_results(results: Dict) -> None:
         print(f"Mean Somatic Marker: {results['apgi_mean_somatic_marker']:.3f}")
         print(f"Mean Threshold: {results['apgi_mean_threshold']:.3f}")
 
-        # 100/100: Precision expectation gap
+        # APGI component: Precision expectation gap
         if "apgi_precision_mismatch" in results:
             print(
                 f"Precision Mismatch (Π̂-Π): {results['apgi_precision_mismatch']:.3f}"
             )
             print(f"Anxiety Level: {results['apgi_anxiety_level']:.3f}")
 
-        # 100/100: Neuromodulators
+        # APGI component: Neuromodulators
         if "apgi_dopamine" in results:
             print("\nNeuromodulator Levels:")
             print(f"  Dopamine (DA): {results['apgi_dopamine']:.2f}")

@@ -1,4 +1,4 @@
-"""Iowa Gambling Task (IGT) Experiment Runner - 100/100 APGI Compliance
+"""Iowa Gambling Task (IGT) Experiment Runner - APGI integration (internal feature checklist; not registered-protocol validation)
 
 This is the AGENT-EDITABLE file for the auto-improvement system with full APGI integration:
 - Hierarchical 5-level processing
@@ -132,7 +132,7 @@ class SimulatedParticipant:
 
 
 class EnhancedIGTRunner:
-    """IGT Runner with full 100/100 APGI compliance."""
+    """IGT Runner with the internal APGI feature checklist enabled."""
 
     apgi: APGIIntegration | None
     hierarchical: HierarchicalProcessor | None
@@ -145,7 +145,7 @@ class EnhancedIGTRunner:
         self.participant = SimulatedParticipant()
         self.start_time: float | None = None
 
-        # Initialize 100/100 APGI components
+        # Initialize APGI components
         self.enable_apgi = enable_apgi and APGI_PARAMS.get("enabled", True)
         if self.enable_apgi:
             # Core APGI integration
@@ -167,7 +167,7 @@ class EnhancedIGTRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 tau_levels = APGI_PARAMS.get("tau_levels", [0.1, 0.2, 0.4, 1.0, 5.0])
                 if not isinstance(tau_levels, list):
@@ -192,13 +192,13 @@ class EnhancedIGTRunner:
             else:
                 self.hierarchical = None
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             neuromodulators_raw = {
                 "ACh": APGI_PARAMS.get("ACh", 1.0),
                 "NE": APGI_PARAMS.get("NE", 1.0),
@@ -209,7 +209,7 @@ class EnhancedIGTRunner:
                 k: float(cast(float, v)) for k, v in neuromodulators_raw.items()
             }
 
-            # 100/100: Running statistics for z-score normalization
+            # APGI component: Running statistics for z-score normalization
             self.running_stats = {
                 "outcome_mean": 0.0,
                 "outcome_var": 1.0,
@@ -247,7 +247,7 @@ class EnhancedIGTRunner:
         # Update participant's learned values
         self.participant.update_from_outcome(deck_choice, trial.outcome)
 
-        # Process trial with 100/100 APGI dynamics if enabled
+        # Process trial with APGI dynamics if enabled
         if self.apgi:
             # Determine trial type based on deck (disadvantageous = survival domain)
             trial_type = "survival" if deck_choice in ["A", "B"] else "neutral"
@@ -272,7 +272,7 @@ class EnhancedIGTRunner:
                     0.01, self.running_stats["outcome_var"]
                 )
 
-            # 100/100: Determine precision based on trial type and neuromodulators
+            # APGI component: Determine precision based on trial type and neuromodulators
             # DA (dopamine) increases reward sensitivity
             da_boost = (
                 self.neuromodulators.get("DA", 1.0) if self.neuromodulators else 1.0
@@ -285,7 +285,7 @@ class EnhancedIGTRunner:
             precision_ext = (2.0 if trial_type == "survival" else 1.0) * da_boost
             precision_int = (1.5 if trial.outcome > 0 else 1.0) * ht5_effect
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 self.precision_gap.update(
                     precision_ext, precision_int, self.neuromodulators, trial_type
@@ -303,7 +303,7 @@ class EnhancedIGTRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):
@@ -325,7 +325,7 @@ class EnhancedIGTRunner:
             "disadvantageous_choices": summary.get("disadvantageous_choices", 0),
         }
 
-        # Add 100/100 APGI metrics if enabled
+        # Add APGI metrics if enabled
         if self.apgi:
             apgi_summary = self.apgi.finalize()
             results["apgi_enabled"] = True
@@ -339,7 +339,7 @@ class EnhancedIGTRunner:
             )
             results["apgi_mean_threshold"] = apgi_summary.get("mean_threshold", 0.0)
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 results["apgi_precision_mismatch"] = (
                     self.precision_gap.precision_mismatch
@@ -352,12 +352,12 @@ class EnhancedIGTRunner:
                 if not hasattr(self.precision_gap, "precision_overestimated"):
                     results["apgi_precision_overestimated"] = False
 
-            # 100/100: Hierarchical processing
+            # APGI component: Hierarchical processing
             if self.hierarchical:
                 hier_summary = self.hierarchical.get_hierarchical_summary()
                 results.update({f"apgi_{k}": v for k, v in hier_summary.items()})
 
-            # 100/100: Neuromodulator baselines
+            # APGI component: Neuromodulator baselines
             if self.neuromodulators:
                 results["apgi_dopamine"] = self.neuromodulators.get("DA", 1.0)
                 results["apgi_serotonin"] = self.neuromodulators.get("HT5", 1.0)
@@ -394,14 +394,14 @@ def print_results(results: Dict) -> None:
         print(f"Mean Somatic Marker: {results['apgi_mean_somatic_marker']:.3f}")
         print(f"Mean Threshold: {results['apgi_mean_threshold']:.3f}")
 
-        # 100/100: Precision expectation gap
+        # APGI component: Precision expectation gap
         if "apgi_precision_mismatch" in results:
             print(
                 f"Precision Mismatch (Π̂-Π): {results['apgi_precision_mismatch']:.3f}"
             )
             print(f"Anxiety Level: {results['apgi_anxiety_level']:.3f}")
 
-        # 100/100: Neuromodulators
+        # APGI component: Neuromodulators
         if "apgi_dopamine" in results:
             print("\nNeuromodulator Levels:")
             print(f"  Dopamine (DA): {results['apgi_dopamine']:.2f}")

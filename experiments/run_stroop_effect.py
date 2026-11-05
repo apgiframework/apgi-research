@@ -172,7 +172,7 @@ class EnhancedStroopRunner:
             observed_rt = rt / 1000.0  # Convert to seconds
             expected_rt_sec = expected_rt / 1000.0
 
-            # 100/100: Determine precision based on neuromodulators
+            # APGI component: Determine precision based on neuromodulators
             ach_boost = (self.neuromodulators or {}).get("ACh", 1.0)
             ne_effect = (self.neuromodulators or {}).get("NE", 1.0)
             da_effect = (self.neuromodulators or {}).get("DA", 1.0)
@@ -180,7 +180,7 @@ class EnhancedStroopRunner:
             precision_ext = 1.5 * ach_boost * (1.0 + 0.2 * da_effect)
             precision_int = 1.5 * (1.0 + 0.2 * ne_effect)
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 self.precision_gap.update(
                     precision_ext,
@@ -200,7 +200,7 @@ class EnhancedStroopRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):

@@ -4,7 +4,7 @@ Fixed constants and data preparation for Iowa Gambling Task (IGT) experiments.
 This file is READ-ONLY. Do not modify.
 It defines the fixed deck configurations, win/loss probabilities, and evaluation metrics.
 
-APGI Integration: Full 100/100 compliance with hierarchical processing,
+APGI Integration: Internal APGI checklist with hierarchical processing,
 neuromodulator mapping, Π vs Π̂ distinction, and psychiatric profiles.
 
 Usage:
@@ -444,7 +444,7 @@ if __name__ == "__main__":
     print(f"  Learning rate: {summary['learning_rate']:.3f}")
     print(f"  Final money: ${summary['final_money']}")
 
-# Standardized APGI Parameters Export (100/100 Compliance)
+# Standardized APGI Parameters Export (internal checklist)
 # These parameters provide full APGI framework integration for the run file
 APGI_PARAMS = {
     # Core identification

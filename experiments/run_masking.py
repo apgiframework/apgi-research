@@ -1,5 +1,5 @@
 """
-Masking Experiment Runner - 100/100 APGI Compliance
+Masking Experiment Runner - APGI integration (internal feature checklist; not registered-protocol validation)
 
 This is the AGENT-EDITABLE file for the auto-improvement system.
 Modify this file to experiment with different task parameters, mask types,
@@ -209,7 +209,7 @@ class SimulatedParticipant:
 
 class EnhancedMaskingRunner:
     """
-    Runs the masking experiment with 100/100 APGI compliance.
+    Runs the masking experiment with internal APGI feature checklist.
 
     This runner integrates:
     - Core APGI dynamical system (ignition, surprise, somatic markers)
@@ -225,7 +225,7 @@ class EnhancedMaskingRunner:
         self.start_time: Optional[float] = None
         self.trials: List[MaskingTrial] = []
 
-        # Initialize 100/100 APGI components
+        # Initialize APGI components
         self.enable_apgi = enable_apgi and APGI_PARAMS.get("enabled", True)
 
         # Helper function to safely get float values from APGI_PARAMS
@@ -262,7 +262,7 @@ class EnhancedMaskingRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -287,13 +287,13 @@ class EnhancedMaskingRunner:
             else:
                 self.hierarchical = None
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators = {
                 "ACh": safe_float("ACh", 1.0),
                 "NE": safe_float("NE", 1.0),
@@ -301,7 +301,7 @@ class EnhancedMaskingRunner:
                 "HT5": safe_float("HT5", 1.0),
             }
 
-            # 100/100: Running statistics for z-score normalization
+            # APGI component: Running statistics for z-score normalization
             self.running_stats = {
                 "outcome_mean": 0.5,
                 "outcome_var": 0.25,
@@ -352,7 +352,7 @@ class EnhancedMaskingRunner:
         trial.rt_ms = results["rt_ms"]
         trial.timestamp = time.time()
 
-        # 100/100: Process with APGI if enabled
+        # APGI component: Process with APGI if enabled
         if self.apgi:
             # Compute observed and expected values
             observed = 1.0 if trial.correct else 0.0
@@ -363,7 +363,7 @@ class EnhancedMaskingRunner:
                 "survival" if trial.mask_type == MaskType.BACKWARD else "neutral"
             )
 
-            # 100/100: Determine precision based on mask type and neuromodulators
+            # APGI component: Determine precision based on mask type and neuromodulators
             # ACh increases visual attention precision
             ach_boost = (
                 self.neuromodulators.get("ACh", 1.0) if self.neuromodulators else 1.0
@@ -380,7 +380,7 @@ class EnhancedMaskingRunner:
                 (1.5 if trial.correct else 1.0) * (1.0 + 0.2 * ne_effect)
             )
 
-            # 100/100: Update running statistics for z-score normalization
+            # APGI component: Update running statistics for z-score normalization
             if self.running_stats:
                 alpha_mu = 0.01
                 alpha_sigma = 0.005
@@ -395,7 +395,7 @@ class EnhancedMaskingRunner:
                     0.01, self.running_stats["outcome_var"]
                 )
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 self.precision_gap.update(
                     precision_ext, precision_int, self.neuromodulators or {}
@@ -403,7 +403,7 @@ class EnhancedMaskingRunner:
                 precision_ext = self.precision_gap.Pi_e_actual
                 precision_int = self.precision_gap.Pi_i_actual
 
-            # 100/100: Process with APGI - computes ignition, surprise, somatic markers
+            # APGI component: Process with APGI - computes ignition, surprise, somatic markers
             apgi_state = self.apgi.process_trial(
                 observed=observed,
                 predicted=expected,
@@ -412,7 +412,7 @@ class EnhancedMaskingRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):
@@ -524,7 +524,7 @@ class EnhancedMaskingRunner:
             },
         }
 
-        # 100/100: Add APGI metrics if enabled
+        # APGI component: Add APGI metrics if enabled
         if self.apgi:
             apgi_summary = self.apgi.finalize()
             results["apgi_enabled"] = True
@@ -538,7 +538,7 @@ class EnhancedMaskingRunner:
             )
             results["apgi_mean_threshold"] = apgi_summary.get("mean_threshold", 0.0)
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 results["apgi_precision_mismatch"] = (
                     self.precision_gap.precision_mismatch
@@ -548,12 +548,12 @@ class EnhancedMaskingRunner:
                     self.precision_gap.precision_overestimated
                 )
 
-            # 100/100: Hierarchical processing
+            # APGI component: Hierarchical processing
             if self.hierarchical:
                 hier_summary = self.hierarchical.get_hierarchical_summary()
                 results.update({f"apgi_{k}": v for k, v in hier_summary.items()})
 
-            # 100/100: Neuromodulator baselines
+            # APGI component: Neuromodulator baselines
             if self.neuromodulators:
                 results["apgi_acetylcholine"] = self.neuromodulators.get("ACh", 1.0)
                 results["apgi_norepinephrine"] = self.neuromodulators.get("NE", 1.0)

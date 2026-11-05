@@ -1,5 +1,5 @@
 """
-Artificial Grammar Learning Experiment Runner - 100/100 APGI Compliance
+Artificial Grammar Learning Experiment Runner - APGI integration (internal feature checklist; not registered-protocol validation)
 
 This is the AGENT-EDITABLE file for the auto-improvement system.
 Modify this file to experiment with different task parameters, grammar complexities,
@@ -84,13 +84,13 @@ class SimulatedParticipant:
 
 
 # ---------------------------------------------------------------------------
-# Enhanced Runner with 100/100 APGI Compliance
+# Enhanced Runner with APGI integration (internal feature checklist; not registered-protocol validation)
 # ---------------------------------------------------------------------------
 
 
 class EnhancedArtificialGrammarRunner:
     """
-    Artificial Grammar Learning Runner with full 100/100 APGI compliance.
+    Artificial Grammar Learning Runner with the internal APGI feature checklist enabled.
 
     Integrates hierarchical processing, precision expectation gap (Π vs Π̂),
     neuromodulator mapping, and domain-specific thresholds for implicit learning.
@@ -107,7 +107,7 @@ class EnhancedArtificialGrammarRunner:
         self.participant = SimulatedParticipant()
         self.start_time: float | None = None
 
-        # Initialize 100/100 APGI components
+        # Initialize APGI components
         self.enable_apgi = enable_apgi and APGI_PARAMS.get("enabled", True)
         if self.enable_apgi:
             params = APGIParameters(
@@ -128,7 +128,7 @@ class EnhancedArtificialGrammarRunner:
             )
             self.apgi = APGIIntegration(params)
 
-            # 100/100: Hierarchical 5-level processing (requires UltimateAPGIParameters)
+            # APGI component: Hierarchical 5-level processing (requires UltimateAPGIParameters)
             if APGI_PARAMS.get("hierarchical_enabled", True):
                 ultimate_params = UltimateAPGIParameters(
                     tau_S=params.tau_S,
@@ -156,13 +156,13 @@ class EnhancedArtificialGrammarRunner:
             else:
                 self.hierarchical = None
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if APGI_PARAMS.get("precision_gap_enabled", True):
                 self.precision_gap = PrecisionExpectationState()
             else:
                 self.precision_gap = None
 
-            # 100/100: Neuromodulator tracking
+            # APGI component: Neuromodulator tracking
             self.neuromodulators = {
                 "ACh": float(cast(float, APGI_PARAMS.get("ACh", 1.0))),
                 "NE": float(cast(float, APGI_PARAMS.get("NE", 1.0))),
@@ -170,7 +170,7 @@ class EnhancedArtificialGrammarRunner:
                 "HT5": float(cast(float, APGI_PARAMS.get("HT5", 1.0))),
             }
 
-            # 100/100: Running statistics for z-score normalization
+            # APGI component: Running statistics for z-score normalization
             self.running_stats = {
                 "outcome_mean": 0.5,
                 "outcome_var": 0.25,
@@ -210,7 +210,7 @@ class EnhancedArtificialGrammarRunner:
             rt_ms=rt,
         )
 
-        # 100/100: Process with APGI if enabled
+        # APGI component: Process with APGI if enabled
         if self.apgi:
             # Compute prediction error from accuracy
             observed_accuracy = 1.0 if correct else 0.0
@@ -219,7 +219,7 @@ class EnhancedArtificialGrammarRunner:
             # Trial type: grammatical strings may have higher salience
             trial_type = "neutral"
 
-            # 100/100: Determine precision based on neuromodulators
+            # APGI component: Determine precision based on neuromodulators
             # ACh increases attention precision for implicit learning
             ach_boost = (
                 self.neuromodulators.get("ACh", 1.0) if self.neuromodulators else 1.0
@@ -236,7 +236,7 @@ class EnhancedArtificialGrammarRunner:
             precision_ext = 1.5 * ach_boost * (1.0 + 0.2 * da_effect)
             precision_int = 1.5 * (1.0 + 0.2 * ne_effect)
 
-            # 100/100: Update running statistics for z-score normalization
+            # APGI component: Update running statistics for z-score normalization
             alpha_mu = 0.01
             alpha_sigma = 0.005
             if self.running_stats:
@@ -251,7 +251,7 @@ class EnhancedArtificialGrammarRunner:
                     0.01, self.running_stats["outcome_var"]
                 )
 
-            # 100/100: Update precision expectation gap (Π vs Π̂)
+            # APGI component: Update precision expectation gap (Π vs Π̂)
             if self.precision_gap and self.neuromodulators:
                 self.precision_gap.update(
                     precision_ext, precision_int, self.neuromodulators, trial_type
@@ -259,7 +259,7 @@ class EnhancedArtificialGrammarRunner:
                 precision_ext = self.precision_gap.Pi_e_actual
                 precision_int = self.precision_gap.Pi_i_actual
 
-            # 100/100: Process with APGI - computes ignition, surprise, somatic markers
+            # APGI component: Process with APGI - computes ignition, surprise, somatic markers
             apgi_state = self.apgi.process_trial(
                 observed=observed_accuracy,
                 predicted=expected_accuracy,
@@ -268,7 +268,7 @@ class EnhancedArtificialGrammarRunner:
                 precision_int=precision_int,
             )
 
-            # 100/100: Process hierarchical levels
+            # APGI component: Process hierarchical levels
             if self.hierarchical:
                 signal = apgi_state.get("S", 0.0)
                 for level_idx in range(5):
@@ -289,7 +289,7 @@ class EnhancedArtificialGrammarRunner:
             "non_grammatical_accuracy": summary.get("non_grammatical_accuracy", 0.0),
         }
 
-        # 100/100: Add APGI metrics if enabled
+        # APGI component: Add APGI metrics if enabled
         if self.apgi:
             apgi_summary = self.apgi.finalize()
             results["apgi_enabled"] = True
@@ -303,7 +303,7 @@ class EnhancedArtificialGrammarRunner:
             )
             results["apgi_mean_threshold"] = apgi_summary.get("mean_threshold", 0.0)
 
-            # 100/100: Precision expectation gap (Π vs Π̂)
+            # APGI component: Precision expectation gap (Π vs Π̂)
             if self.precision_gap:
                 results["apgi_precision_mismatch"] = (
                     self.precision_gap.precision_mismatch
@@ -313,12 +313,12 @@ class EnhancedArtificialGrammarRunner:
                     self.precision_gap.precision_overestimated
                 )
 
-            # 100/100: Hierarchical processing
+            # APGI component: Hierarchical processing
             if self.hierarchical:
                 hier_summary = self.hierarchical.get_hierarchical_summary()
                 results.update({f"apgi_{k}": v for k, v in hier_summary.items()})
 
-            # 100/100: Neuromodulator baselines
+            # APGI component: Neuromodulator baselines
             if self.neuromodulators:
                 results["apgi_acetylcholine"] = self.neuromodulators.get("ACh", 1.0)
                 results["apgi_norepinephrine"] = self.neuromodulators.get("NE", 1.0)
@@ -354,14 +354,14 @@ def print_results(results: Dict) -> None:
         print(f"Mean Somatic Marker: {results['apgi_mean_somatic_marker']:.3f}")
         print(f"Mean Threshold: {results['apgi_mean_threshold']:.3f}")
 
-        # 100/100: Precision expectation gap
+        # APGI component: Precision expectation gap
         if "apgi_precision_mismatch" in results:
             print(
                 f"Precision Mismatch (Π̂-Π): {results['apgi_precision_mismatch']:.3f}"
             )
             print(f"Anxiety Level: {results['apgi_anxiety_level']:.3f}")
 
-        # 100/100: Neuromodulators
+        # APGI component: Neuromodulators
         if "apgi_dopamine" in results:
             print("\nNeuromodulator Levels:")
             print(f"  Dopamine (DA): {results['apgi_dopamine']:.2f}")

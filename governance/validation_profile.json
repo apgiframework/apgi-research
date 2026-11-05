@@ -1,0 +1,58 @@
+{
+  "record_version": "1.0.0",
+  "requirement": "AUDIT-GOV-001 / APGI-PRO-004",
+  "status": "DRAFT_UNAPPROVED",
+  "approved_by": null,
+  "approved_on": null,
+  "note": "Proposed Application Validation Profile for apgi-research. Nothing here is approved; every NOT_APPLICABLE proposal needs a rationale and an approver before it counts (spec section 1).",
+  "component": "apgi-research",
+  "declared_version": "1.1.0",
+  "declared_protocol_definitions": "bundled protocol_0..protocol_7 at release 1.1.0 (v1.2 equivalence unconfirmed)",
+  "release_owner": null,
+  "interfaces": [
+    "CLI (apgi_cli.py)",
+    "desktop GUI (GUI_auto_improve_experiments.py)",
+    "Python packages: battery, item_bank, utils"
+  ],
+  "platforms": [
+    "Linux/CPython 3.10-3.13 (CI matrix)",
+    "macOS and Windows: untested"
+  ],
+  "data_classes": [
+    "synthetic and simulated behavioural data",
+    "operator identity and audit logs",
+    "protocol definitions (public)",
+    "participant data: NOT collected by this component"
+  ],
+  "environments": [
+    "local",
+    "CI"
+  ],
+  "applicability_proposals": [
+    {
+      "requirement": "APGI-API-001",
+      "proposal": "NOT_APPLICABLE as a deployed network API; applicable to CLI/OpenAPI generator",
+      "rationale": "apgi-research exposes no deployed service in this checkout",
+      "approver": null
+    },
+    {
+      "requirement": "APGI-INT-004",
+      "proposal": "NOT_APPLICABLE here; applies to client repositories",
+      "rationale": "no client-displayed values originate in this component",
+      "approver": null
+    },
+    {
+      "requirement": "APGI-CLI-001",
+      "proposal": "PARTIAL: scoring/linting of item bank applies; browser clients out of scope",
+      "rationale": "clients live in apgiframework.com",
+      "approver": null
+    }
+  ],
+  "non_waivable_gaps_open": [
+    "APGI-SCI-001",
+    "APGI-SCI-002",
+    "APGI-REP-001 (proof reference)",
+    "APGI-CON-001",
+    "APGI-CON-002"
+  ]
+}

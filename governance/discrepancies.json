@@ -1,0 +1,42 @@
+{
+  "record_version": "1.0.0",
+  "requirement": "APGI-SCI-001/002 (spec section 1: a discrepancy opens a tracked issue; a software fix SHALL NOT silently redefine the theory)",
+  "discrepancies": [
+    {
+      "id": "DISC-001",
+      "status": "open",
+      "severity": "Critical",
+      "title": "Two surprise formulations coexist; neither verified against the Formal Mathematical Specification",
+      "evidence": [
+        "APGI_System.py CoreIgnitionSystem.accumulated_signal: 0.5*Pi*eps^2 (raw squared error)",
+        "APGI_System.py around line 1090: S_t = Pi*|z| (precision times absolute z)"
+      ],
+      "required_decision": "Scientific authority selects the canonical ignition equation and the strict (> vs >=) boundary; approved golden vectors are then added as fixtures.",
+      "blocked_on": "approved Formal Mathematical Specification and golden vectors (not in this checkout)",
+      "code_changed": false
+    },
+    {
+      "id": "DISC-002",
+      "status": "open",
+      "severity": "High",
+      "title": "APGIParameters.beta default 1.5 lies outside the registered beta_SM range [0.3, 0.7]",
+      "evidence": [
+        "governance/parameter_provenance.json",
+        "tests/test_protocol_spec_v1_1.py::TestParameterDefaults"
+      ],
+      "required_decision": "Classify the default; confirmatory fits are blocked by utils/apgi_deviation.py until resolved.",
+      "code_changed": false
+    },
+    {
+      "id": "DISC-003",
+      "status": "open",
+      "severity": "High",
+      "title": "Hierarchy labels differ from canonical L0-L4 (10 ms to years)",
+      "evidence": [
+        "APGI_System.py HierarchicalLevel / HierarchicalProcessor taus [0.1,0.2,0.4,1,5]"
+      ],
+      "required_decision": "Approved ranges per level; then relabel and add boundary tests.",
+      "code_changed": false
+    }
+  ]
+}

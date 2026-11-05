@@ -8,5 +8,6 @@ text), S1-L1-17 (reliability targets frozen before collection).
 
 from item_bank.lint import AGREEMENT_5, lint_bank, load_bank
 from item_bank.render import render_order
+from item_bank.scoring import score_subscales
 
-__all__ = ["AGREEMENT_5", "lint_bank", "load_bank", "render_order"]
+__all__ = ["AGREEMENT_5", "lint_bank", "load_bank", "render_order", "score_subscales"]

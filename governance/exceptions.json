@@ -1,0 +1,25 @@
+{
+  "record_version": "1.0.0",
+  "requirement": "AUDIT-GOV-005",
+  "note": "A deviation needs requirement, impact, compensating controls, owner, expiry, remediation plan and approving authority. Expired entries invalidate automatically. Non-waivable requirements may not appear here.",
+  "non_waivable": [
+    "APGI-SCI-001",
+    "APGI-SCI-002",
+    "APGI-PRO-001",
+    "APGI-REP-001",
+    "APGI-API-001",
+    "APGI-API-004",
+    "APGI-VAL-001",
+    "APGI-DAT-001",
+    "APGI-DAT-002",
+    "APGI-DAT-004",
+    "APGI-CON-001",
+    "APGI-CON-002",
+    "APGI-API-002",
+    "APGI-API-003",
+    "APGI-IMP-002",
+    "APGI-INT-002",
+    "APGI-REL-001"
+  ],
+  "exceptions": []
+}

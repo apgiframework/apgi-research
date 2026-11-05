@@ -1,10 +1,12 @@
 # APGI Experiment Runners - Maturity Matrix
 
+> **Scope of this document.** Scores and "100/100" figures below are an *internal feature checklist* (does the runner call the APGI components), not validation against the registered Protocol definitions, the Formal Mathematical Specification, or APGI-VAL-SPEC-1.2. See `governance/claim_register.json` (CLM-001).
+
 **Last Updated:** April 2026
 
 ## Experiment Runners Maturity (29 Experiments)
 
-All 29 experiment runners now achieve **Level 4: Production** or higher with 100/100 APGI compliance.
+All 29 experiment runners now achieve **Level 4: Production** or higher on the internal APGI feature checklist.
 
 | Experiment Runner | Data Classification | Audit Trails | Parameter Pseudonymization | CLI Integration | Current Level |
 | ------------------- | --------------------- | ------------ | -------------------------- | ----------------- | --------------- |
@@ -71,7 +73,7 @@ All 29 experiment runners now achieve **Level 4: Production** or higher with 100
 
 ## Key Achievements (April 2026)
 
-- All 29 experiments achieve **100/100 or higher** APGI compliance
+- All 29 experiments achieve **100/100 or higher** on the internal feature checklist
 - All experiments integrated with `apgi_cli.py` for standardized entry points
 - All experiments support data classification, audit trails, and parameter pseudonymization
 - 8 production infrastructure modules fully operational
