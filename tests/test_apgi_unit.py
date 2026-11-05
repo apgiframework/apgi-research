@@ -257,6 +257,9 @@ class TestDynamicalSystem:
 
     def test_reset(self):
         """Test system reset."""
+        import APGI_System
+
+        APGI_System.set_run_seed(0)  # step() is stochastic; fix the recorded seed
         params = APGIParameters()
         system = DynamicalSystem(params)
 
